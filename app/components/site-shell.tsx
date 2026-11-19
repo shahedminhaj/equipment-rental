@@ -40,9 +40,11 @@ export function SiteHeader() {
             <Link href="/#categories">Categories</Link>
             <Link href="/#how-it-works">How it works</Link>
             <Link href="/#reviews">Our community</Link>
+            <Link href="/account">My bookings</Link>
+            <Link href="/dashboard">Manage</Link>
           </nav>
-          <Link className="button button-dark nav-cta" href="/equipment">
-            Explore rentals <span aria-hidden="true">↗</span>
+          <Link className="button button-dark nav-cta" href="/account">
+            My account <span aria-hidden="true">↗</span>
           </Link>
         </div>
       </header>
@@ -68,6 +70,8 @@ export function SiteFooter() {
           <strong>Fieldkit</strong>
           <Link href="/#why-fieldkit">Our story</Link>
           <Link href="/#reviews">Community</Link>
+          <Link href="/account">My bookings</Link>
+          <Link href="/dashboard">Owner / admin</Link>
           <Link href="/#top">Back to top ↑</Link>
         </div>
         <div className="footer-note">

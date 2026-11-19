@@ -34,6 +34,8 @@ export async function apiRequest<T>(
   }
 
   const response = await fetch(`${apiBaseUrl}${path}`, { ...init, headers });
+  if (response.status === 204) return undefined as T;
+
   let payload: unknown;
   try {
     payload = await response.json();

@@ -1615,6 +1615,349 @@ a {
   color: #a44f3c !important;
 }
 
+.account-page {
+  flex: 1;
+  padding: clamp(44px, 7vw, 88px) 24px;
+  background: #f7f6f0;
+}
+
+.account-shell {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.account-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.account-heading h1 {
+  margin: 12px 0 8px;
+  font-size: clamp(38px, 6vw, 64px);
+  letter-spacing: -0.06em;
+}
+
+.account-heading > div > p:last-child,
+.account-card-heading > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.account-signout {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--olive-dark);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.account-content {
+  display: grid;
+  gap: 16px;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.account-card {
+  min-width: 0;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid #e8e7df;
+  border-radius: 4px;
+  background: #fcfbf7;
+}
+
+.account-auth-card {
+  width: min(100%, 480px);
+  margin: 0 auto;
+}
+
+.account-card-heading {
+  margin-bottom: 23px;
+}
+
+.account-card-heading h2 {
+  margin: 8px 0;
+  font-size: 25px;
+  letter-spacing: -0.045em;
+}
+
+.account-form {
+  display: grid;
+  gap: 15px;
+}
+
+.account-form label {
+  display: grid;
+  gap: 7px;
+  color: #4b4e44;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.account-form input,
+.account-form textarea {
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid #dedfd6;
+  border-radius: 3px;
+  outline: none;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.account-form textarea {
+  min-height: 85px;
+  resize: vertical;
+}
+
+.account-form input:focus,
+.account-form textarea:focus {
+  border-color: var(--olive);
+  box-shadow: 0 0 0 2px rgb(101 112 74 / 12%);
+}
+
+.account-form input[readonly] {
+  background: #f3f2ec;
+  color: var(--muted);
+}
+
+.account-submit {
+  width: 100%;
+  min-height: 45px;
+  justify-content: space-between;
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.account-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.account-form-hint,
+.account-message {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.account-form-hint {
+  margin: -8px 0 0;
+}
+
+.account-google-signin {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  padding-top: 5px;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.account-google-signin .google-signin-note {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.account-switch {
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.account-switch button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--olive);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+}
+
+.account-error,
+.account-success {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid;
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.account-error {
+  border-color: #e8c9c0;
+  background: #fbefec;
+  color: #984838;
+}
+
+.account-success {
+  border-color: #d5dfbd;
+  background: #f0f4e7;
+  color: #4c5d36;
+}
+
+.account-feedback {
+  width: 100%;
+}
+
+.account-bookings-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account-booking-count {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf0e4;
+  color: var(--olive-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.account-booking-list {
+  display: grid;
+  gap: 11px;
+}
+
+.account-booking {
+  padding: 17px;
+  border: 1px solid #e8e7df;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.account-booking-top,
+.account-booking-bottom {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.account-booking-top h3,
+.account-empty-bookings h3 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.account-booking-top p,
+.account-empty-bookings p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.account-booking-top > strong {
+  flex: none;
+  font-size: 13px;
+}
+
+.account-booking-bottom {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #efeee8;
+}
+
+.account-status {
+  padding: 5px 8px;
+  border-radius: 2px;
+  background: #f0f0eb;
+  color: #56594f;
+  font-size: 9px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.account-status-paid {
+  background: #edf2e4;
+  color: #4c5d36;
+}
+
+.account-status-failed {
+  background: #fbefec;
+  color: #984838;
+}
+
+.account-booking-bottom a {
+  margin-left: auto;
+  color: var(--olive);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.account-empty-bookings {
+  display: grid;
+  justify-items: start;
+  padding: 24px 0 5px;
+}
+
+.account-empty-bookings > span {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  margin-bottom: 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf0e4;
+  color: var(--olive-dark);
+}
+
+.account-empty-bookings .button {
+  min-height: 40px;
+  margin-top: 17px;
+  font-size: 10px;
+}
+
+.account-message {
+  margin: 0;
+  padding: 22px;
+  border: 1px solid var(--line);
+  background: #fcfbf7;
+}
+
+.account-load-error {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+
+.account-load-error .button {
+  min-height: 42px;
+  font-size: 11px;
+}
+
 .category-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -2814,6 +3157,31 @@ a {
   }
 }
 
+@media (max-width: 760px) {
+  .account-page {
+    padding: 48px 22px 65px;
+  }
+
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-booking-bottom a {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .account-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .account-booking-top {
+    flex-direction: column;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2822,5 +3190,417 @@ a {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+.account-access-card {
+  width: min(100%, 480px);
+  margin: 0 auto;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid #e8e7df;
+  border-radius: 4px;
+  background: #fcfbf7;
+}
+
+.account-access-card h1 {
+  margin: 10px 0 22px;
+  font-size: 27px;
+  letter-spacing: -0.05em;
+}
+
+.account-access-form {
+  display: grid;
+  gap: 14px;
+}
+
+.account-access-form label {
+  display: grid;
+  gap: 7px;
+  color: #4b4e44;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.account-access-form input,
+.management-form input,
+.management-form textarea,
+.management-form select,
+.management-inline-form input,
+.management-role-select select {
+  width: 100%;
+  min-height: 41px;
+  padding: 9px 11px;
+  border: 1px solid #dedfd6;
+  border-radius: 3px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.account-access-form textarea,
+.management-form textarea {
+  resize: vertical;
+}
+
+.account-access-form .button {
+  width: 100%;
+}
+
+.account-access-switch {
+  margin: 18px 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.account-access-switch button {
+  border: 0;
+  background: transparent;
+  color: var(--olive);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+}
+
+.account-access-divider {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+.google-signin-button {
+  display: grid;
+  min-height: 40px;
+  justify-items: center;
+}
+
+.google-signin-note {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.account-page-heading {
+  display: flex;
+  width: min(1120px, 100%);
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto 32px;
+}
+
+.account-page-heading h1 {
+  margin: 12px 0 8px;
+  font-size: clamp(38px, 6vw, 64px);
+  letter-spacing: -0.06em;
+}
+
+.account-page-heading > div > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.account-empty,
+.management-section {
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid #e8e7df;
+  border-radius: 4px;
+  background: #fcfbf7;
+}
+
+.account-empty {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.account-empty h2 {
+  margin: 0 0 8px;
+}
+
+.account-empty p,
+.management-help {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.management-content {
+  display: grid;
+  width: min(1120px, 100%);
+  gap: 20px;
+  margin: 0 auto;
+}
+
+.management-section {
+  display: grid;
+  gap: 18px;
+}
+
+.management-section-heading,
+.management-card-heading,
+.management-actions,
+.management-inline-form {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.management-section-heading h2 {
+  margin: 7px 0 0;
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+.management-form {
+  display: grid;
+  gap: 13px;
+  padding: 18px;
+  border: 1px solid #e8e7df;
+  background: #fff;
+}
+
+.management-form h3,
+.management-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.management-form label,
+.management-inline-form label,
+.management-role-select {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+  color: #4b4e44;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.management-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.management-form button,
+.management-actions .button {
+  min-height: 39px;
+  justify-self: start;
+  font-size: 10px;
+}
+
+.management-help {
+  margin: 0;
+}
+
+.management-list {
+  display: grid;
+  gap: 10px;
+}
+
+.management-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e8e7df;
+  background: #fff;
+}
+
+.management-card-heading > div {
+  display: grid;
+  gap: 6px;
+}
+
+.management-card-heading > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.management-inline-form {
+  justify-content: flex-start;
+}
+
+.management-inline-form .button,
+.management-inline-form .booking-cancel {
+  min-height: 37px;
+  align-self: end;
+}
+
+.management-user-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.management-role-select {
+  max-width: 150px;
+}
+
+.status-pill {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 2px;
+  background: #f0f0eb;
+  color: #56594f;
+  font-size: 9px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.status-paid,
+.status-approved,
+.status-confirmed,
+.status-owner {
+  background: #edf2e4;
+  color: #4c5d36;
+}
+
+.status-pending {
+  background: #faf2df;
+  color: #84621e;
+}
+
+.status-failed,
+.status-rejected,
+.status-cancelled,
+.status-disabled {
+  background: #fbefec;
+  color: #984838;
+}
+
+.account-receipt-button {
+  margin-top: 12px;
+  padding: 7px 0;
+  border: 0;
+  background: transparent;
+  color: var(--olive);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  text-decoration: underline;
+}
+
+.receipt-overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.receipt-card {
+  position: relative;
+  z-index: 101;
+  width: min(100%, 560px);
+  padding: 30px;
+  border: 1px solid #e8e7df;
+  background: #fcfbf7;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 25%);
+}
+
+.receipt-card h2 {
+  margin: 8px 0 20px;
+  font-size: 28px;
+}
+
+.receipt-card dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.receipt-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #e8e7df;
+  font-size: 11px;
+}
+
+.receipt-card dt {
+  color: var(--muted);
+}
+
+.receipt-card dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.receipt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+@media (max-width: 680px) {
+  .management-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .management-card-heading,
+  .management-inline-form,
+  .management-user-row {
+    align-items: stretch;
+    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .management-inline-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .management-role-select {
+    max-width: none;
+  }
+
+  .account-page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .receipt-overlay,
+  .receipt-overlay * {
+    visibility: visible !important;
+  }
+
+  .receipt-overlay {
+    position: fixed;
+    inset: 0;
+    display: block;
+    padding: 0;
+    background: white;
+  }
+
+  .receipt-overlay > .booking-backdrop,
+  .receipt-actions {
+    display: none !important;
+  }
+
+  .receipt-card {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    background: white;
+    box-shadow: none;
   }
 }

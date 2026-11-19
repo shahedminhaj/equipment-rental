@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
+import { GoogleSignInButton } from "./google-sign-in";
+import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
 
 type AuthResponse = {
   token: string;
-  user: { email: string };
+  user: AuthUser;
 };
 
 function localDateValue(date: Date) {
@@ -101,10 +103,30 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
   }
 
   function signOut() {
-    window.localStorage.removeItem("fieldkit_token");
-    window.localStorage.removeItem("fieldkit_user_email");
+    clearAuth();
     setToken("");
     setSignedInEmail("");
+  }
+
+  async function startCheckout(accessToken: string) {
+    const result = await apiRequest<{ checkoutUrl: string }>("/bookings", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        equipmentId: item.id,
+        rentalStartDate: startDate,
+        rentalEndDate: endDate,
+        quantity: quantityValue,
+        contactNumber: phone.trim(),
+        deliveryAddress: address.trim(),
+        notes: notes.trim(),
+      }),
+    });
+    const checkoutUrl = new URL(result.checkoutUrl);
+    if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.stripe.com") {
+      throw new Error("The server returned an invalid Stripe Checkout URL");
+    }
+    window.location.assign(checkoutUrl.toString());
   }
 
   async function handleCheckout(event: FormEvent<HTMLFormElement>) {
@@ -128,35 +150,38 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
           },
         );
         accessToken = authResponse.token;
-        window.localStorage.setItem("fieldkit_token", accessToken);
-        window.localStorage.setItem("fieldkit_user_email", authResponse.user.email);
+        saveAuth(accessToken, authResponse.user);
         setToken(accessToken);
         setSignedInEmail(authResponse.user.email);
       }
-
-      const result = await apiRequest<{ checkoutUrl: string }>("/bookings", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({
-          equipmentId: item.id,
-          rentalStartDate: startDate,
-          rentalEndDate: endDate,
-          quantity: quantityValue,
-          contactNumber: phone.trim(),
-          deliveryAddress: address.trim(),
-          notes: notes.trim(),
-        }),
-      });
-      const checkoutUrl = new URL(result.checkoutUrl);
-      if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.stripe.com") {
-        throw new Error("The server returned an invalid Stripe Checkout URL");
-      }
-      window.location.assign(checkoutUrl.toString());
+      await startCheckout(accessToken);
     } catch (checkoutError) {
       setError(
         checkoutError instanceof Error
           ? checkoutError.message
           : "Could not start checkout. Please try again.",
+      );
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleGoogleCredential(credential: string) {
+    setIsSubmitting(true);
+    setError("");
+    try {
+      const authResponse = await apiRequest<AuthResponse>("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ credential }),
+      });
+      saveAuth(authResponse.token, authResponse.user);
+      setToken(authResponse.token);
+      setSignedInEmail(authResponse.user.email);
+      await startCheckout(authResponse.token);
+    } catch (checkoutError) {
+      setError(
+        checkoutError instanceof Error
+          ? checkoutError.message
+          : "Google sign-in or checkout failed",
       );
       setIsSubmitting(false);
     }
@@ -366,6 +391,10 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
                         onChange={(event) => updateField(() => setPassword(event.target.value))}
                       />
                     </label>
+                    <GoogleSignInButton
+                      onCredential={handleGoogleCredential}
+                      onError={setError}
+                    />
                   </>
                 )}
               </div>
