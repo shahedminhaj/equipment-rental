@@ -400,17 +400,6 @@ a {
   box-shadow: 0 12px 35px rgb(22 27 17 / 15%);
 }
 
-.note-icon {
-  display: grid;
-  width: 35px;
-  height: 35px;
-  place-items: center;
-  border-radius: 50%;
-  background: #e6ebd9;
-  color: var(--olive);
-  font-size: 20px;
-}
-
 .hero-note strong {
   font-size: 10px;
 }
@@ -1078,11 +1067,6 @@ a {
   color: #68744f;
 }
 
-.cta-mark {
-  color: #77845d;
-  font-size: 42px;
-}
-
 .site-footer {
   padding: 49px max(44px, calc((100vw - 1288px) / 2)) 0;
   background: #f0efe8;
@@ -1371,10 +1355,6 @@ a {
     min-height: 250px;
     flex-wrap: wrap;
     padding: 38px 26px;
-  }
-
-  .cta-mark {
-    display: none;
   }
 
   .closing-cta h2 {

@@ -255,7 +255,6 @@ export default function Home() {
             <div className="hero-image-shade" />
             <div className="hero-location"><span aria-hidden="true">⌖</span> Dhaka & beyond</div>
             <div className="hero-note">
-              <span className="note-icon" aria-hidden="true">✳</span>
               <div><strong>Borrow good things.</strong><br /><span>Give your next idea a go.</span></div>
             </div>
             <div className="hero-caption"><span>01</span> The right tool changes everything.</div>
@@ -392,7 +391,7 @@ export default function Home() {
             {[
               { number: "01", title: "Find your thing", description: "Search equipment from local owners and compare what works for you.", symbol: "⌕" },
               { number: "02", title: "Make a plan", description: "Choose your dates, share a few details, and send a booking request.", symbol: "↗" },
-              { number: "03", title: "Get out there", description: "Pick up your gear and get on with making something happen.", symbol: "✳" },
+              { number: "03", title: "Get out there", description: "Pick up your gear and get on with making something happen.", symbol: "↗" },
             ].map((step) => (
               <StaggerItem key={step.number}>
                 <article className="step-card">
@@ -433,7 +432,6 @@ export default function Home() {
         </section>
 
         <section className="closing-cta">
-          <div className="cta-mark" aria-hidden="true">✳</div>
           <div><p className="eyebrow">YOUR NEXT PROJECT STARTS HERE</p><h2>Got a thing to do?<br /><em>We&apos;ve got a thing for that.</em></h2></div>
           <a className="button button-dark" href="#featured">Explore equipment <span aria-hidden="true">↗</span></a>
         </section>
@@ -449,7 +447,7 @@ export default function Home() {
           <div className="footer-column"><strong>Fieldkit</strong><a href="#why-fieldkit">Our story</a><a href="#reviews">Community</a><a href="#top">Back to top ↑</a></div>
           <div className="footer-note"><span>MADE FOR THE MAKERS.</span><p>Share what you have.<br /><em>Find what you need.</em></p></div>
         </div>
-        <div className="footer-bottom"><span>© 2026 Fieldkit. Make good things happen.</span><span>Made for a more resourceful world <span aria-hidden="true">✳</span></span></div>
+        <div className="footer-bottom"><span>© 2026 Fieldkit. Make good things happen.</span><span>Made for a more resourceful world</span></div>
       </footer>
     </>
   );
