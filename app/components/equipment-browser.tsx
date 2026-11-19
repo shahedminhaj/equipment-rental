@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { equipment } from "../data/equipment";
 import type { RentalType } from "../data/equipment";
@@ -228,14 +229,12 @@ export function EquipmentBrowser() {
                       <p className="equipment-location"><span aria-hidden="true">⌖</span> {item.location}</p>
                       <div className="equipment-bottom">
                         <p><strong>{item.rate}</strong> <span>/ {item.period}</span></p>
-                        <button
+                        <Link
                           className="details-coming-soon"
-                          type="button"
-                          disabled
-                          title="Equipment details are planned for a later milestone"
+                          href={`/equipment/${item.id}`}
                         >
-                          Details soon
-                        </button>
+                          View details <span aria-hidden="true">↗</span>
+                        </Link>
                       </div>
                     </div>
                   </article>

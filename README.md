@@ -5,7 +5,7 @@ milestones establish the public homepage and searchable equipment catalog,
 setting up the visual foundation for the customer, owner, and admin experiences
 described in the assignment.
 
-## Completed milestones — 20%
+## Completed milestones — 30%
 
 Implemented:
 
@@ -16,12 +16,17 @@ Implemented:
 - **20% — Equipment catalog:** `/equipment` route with responsive listing cards,
   name/location search, category, rental period, price, and availability filters,
   and price/recently-added sorting
+- **30% — Equipment details:** Static detail pages for sample listings, owner
+  and rental information, and a booking-estimate modal with date, quantity,
+  contact, address, and notes fields
 - Shared header, footer, listing data, and responsive design system
 
 Listings, metrics, availability, ratings, and customer stories are illustrative
 preview content. The catalog filters run in the browser over sample data and
-are not connected to a backend. Authentication, equipment details, booking,
-payments, and dashboards are planned for later milestones.
+are not connected to a backend. The booking modal only previews an estimated
+total; it does not create a booking or process a payment. Authentication,
+backend integration, favorites, real bookings, payments, and dashboards are
+planned for later milestones.
 
 ## Getting started
 

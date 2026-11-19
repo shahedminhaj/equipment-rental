@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Reveal, StaggerGroup, StaggerItem } from "./components/animations";
 import { SiteFooter, SiteHeader } from "./components/site-shell";
 import { equipment } from "./data/equipment";
@@ -199,9 +200,9 @@ export default function Home() {
               title="A few things worth borrowing."
               description="Owner-approved picks to get your next project moving."
             />
-            <a className="text-link featured-link" href="/equipment">
+            <Link className="text-link featured-link" href="/equipment">
               Browse all equipment <span aria-hidden="true">↗</span>
-            </a>
+            </Link>
           </Reveal>
           <StaggerGroup className="equipment-grid">
             {equipment.map((item) => (
@@ -226,7 +227,13 @@ export default function Home() {
                     <p className="equipment-location"><span aria-hidden="true">⌖</span> {item.location}</p>
                     <div className="equipment-bottom">
                       <p><strong>{item.rate}</strong> <span>/ {item.period}</span></p>
-                      <span className="details-arrow" aria-hidden="true">↗</span>
+                      <Link
+                        className="details-arrow"
+                        href={`/equipment/${item.id}`}
+                        aria-label={`View details for ${item.name}`}
+                      >
+                        ↗
+                      </Link>
                     </div>
                   </div>
                 </article>
@@ -275,7 +282,7 @@ export default function Home() {
                 light
               />
             </Reveal>
-            <a className="button button-light" href="/equipment">Find your next rental <span aria-hidden="true">↗</span></a>
+            <Link className="button button-light" href="/equipment">Find your next rental <span aria-hidden="true">↗</span></Link>
           </div>
           <StaggerGroup className="steps-grid">
             {[
@@ -323,7 +330,7 @@ export default function Home() {
 
         <section className="closing-cta">
           <div><p className="eyebrow">YOUR NEXT PROJECT STARTS HERE</p><h2>Got a thing to do?<br /><em>We&apos;ve got a thing for that.</em></h2></div>
-          <a className="button button-dark" href="/equipment">Explore equipment <span aria-hidden="true">↗</span></a>
+          <Link className="button button-dark" href="/equipment">Explore equipment <span aria-hidden="true">↗</span></Link>
         </section>
       </main>
       <SiteFooter />
