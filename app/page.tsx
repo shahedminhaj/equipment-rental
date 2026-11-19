@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { Reveal, StaggerGroup, StaggerItem } from "./components/animations";
+import { SiteFooter, SiteHeader } from "./components/site-shell";
+import { equipment } from "./data/equipment";
 
 const categories = [
   {
@@ -40,75 +42,6 @@ const categories = [
   },
 ];
 
-const equipment = [
-  {
-    name: "Compact excavator",
-    category: "Construction",
-    location: "Dhanmondi, Dhaka",
-    rate: "৳ 4,800",
-    period: "day",
-    rating: "4.9",
-    image:
-      "https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&w=1000&q=85",
-    tag: "Popular",
-  },
-  {
-    name: "Sony A7 IV camera kit",
-    category: "Photography",
-    location: "Gulshan, Dhaka",
-    rate: "৳ 2,200",
-    period: "day",
-    rating: "5.0",
-    image:
-      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1000&q=85",
-    tag: "Top rated",
-  },
-  {
-    name: "Utility pickup truck",
-    category: "Vehicles",
-    location: "Uttara, Dhaka",
-    rate: "৳ 6,500",
-    period: "day",
-    rating: "4.8",
-    image:
-      "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1000&q=85",
-    tag: "Available today",
-  },
-  {
-    name: "Professional drone",
-    category: "Photography",
-    location: "Banani, Dhaka",
-    rate: "৳ 1,800",
-    period: "day",
-    rating: "4.9",
-    image:
-      "https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&w=1000&q=85",
-    tag: "Popular",
-  },
-  {
-    name: "Heavy-duty generator",
-    category: "Electronics",
-    location: "Mirpur, Dhaka",
-    rate: "৳ 3,200",
-    period: "day",
-    rating: "4.7",
-    image:
-      "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1000&q=85",
-    tag: "Verified owner",
-  },
-  {
-    name: "Ride-on lawn mower",
-    category: "Agriculture",
-    location: "Savar, Dhaka",
-    rate: "৳ 2,600",
-    period: "day",
-    rating: "4.9",
-    image:
-      "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=1000&q=85",
-    tag: "New listing",
-  },
-];
-
 const reviews = [
   {
     quote:
@@ -144,30 +77,6 @@ const reviews = [
   },
 ];
 
-function BrandMark() {
-  return (
-    <a className="brand" href="#top" aria-label="Fieldkit home">
-      <span className="brand-icon" aria-hidden="true">
-        <svg viewBox="0 0 36 36" fill="none">
-          <path
-            d="M7 25.5 18 7l11 18.5H7Z"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M12 25.5 18 15l6 10.5M18 7v5"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </span>
-      <span>fieldkit<span className="brand-period">.</span></span>
-    </a>
-  );
-}
-
 function SectionHeading({
   eyebrow,
   title,
@@ -191,26 +100,7 @@ function SectionHeading({
 export default function Home() {
   return (
     <>
-      <div className="announcement">
-        <span className="announcement-dot" />
-        The smarter way to get the gear you need.{" "}
-        <a href="#how-it-works">See how it works <span aria-hidden="true">→</span></a>
-      </div>
-
-      <header className="site-header" id="top">
-        <div className="nav-shell">
-          <BrandMark />
-          <nav className="main-nav" aria-label="Main navigation">
-            <a href="#featured">Find equipment</a>
-            <a href="#categories">Categories</a>
-            <a href="#how-it-works">How it works</a>
-            <a href="#reviews">Our community</a>
-          </nav>
-          <a className="button button-dark nav-cta" href="#featured">
-            Explore rentals <span aria-hidden="true">↗</span>
-          </a>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main>
         <section className="hero">
@@ -309,8 +199,8 @@ export default function Home() {
               title="A few things worth borrowing."
               description="Owner-approved picks to get your next project moving."
             />
-            <a className="text-link featured-link" href="#categories">
-              Browse all categories <span aria-hidden="true">↗</span>
+            <a className="text-link featured-link" href="/equipment">
+              Browse all equipment <span aria-hidden="true">↗</span>
             </a>
           </Reveal>
           <StaggerGroup className="equipment-grid">
@@ -385,7 +275,7 @@ export default function Home() {
                 light
               />
             </Reveal>
-            <a className="button button-light" href="#featured">Find your next rental <span aria-hidden="true">↗</span></a>
+            <a className="button button-light" href="/equipment">Find your next rental <span aria-hidden="true">↗</span></a>
           </div>
           <StaggerGroup className="steps-grid">
             {[
@@ -433,22 +323,10 @@ export default function Home() {
 
         <section className="closing-cta">
           <div><p className="eyebrow">YOUR NEXT PROJECT STARTS HERE</p><h2>Got a thing to do?<br /><em>We&apos;ve got a thing for that.</em></h2></div>
-          <a className="button button-dark" href="#featured">Explore equipment <span aria-hidden="true">↗</span></a>
+          <a className="button button-dark" href="/equipment">Explore equipment <span aria-hidden="true">↗</span></a>
         </section>
       </main>
-
-      <footer className="site-footer">
-        <div className="footer-main">
-          <div className="footer-brand">
-            <BrandMark />
-            <p>Good gear has more than one life.<br />Let&apos;s make the most of it.</p>
-          </div>
-          <div className="footer-column"><strong>Explore</strong><a href="#featured">Find equipment</a><a href="#categories">Categories</a><a href="#how-it-works">How it works</a></div>
-          <div className="footer-column"><strong>Fieldkit</strong><a href="#why-fieldkit">Our story</a><a href="#reviews">Community</a><a href="#top">Back to top ↑</a></div>
-          <div className="footer-note"><span>MADE FOR THE MAKERS.</span><p>Share what you have.<br /><em>Find what you need.</em></p></div>
-        </div>
-        <div className="footer-bottom"><span>© 2026 Fieldkit. Make good things happen.</span><span>Made for a more resourceful world</span></div>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

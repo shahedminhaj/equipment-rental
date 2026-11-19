@@ -1,22 +1,26 @@
 # Fieldkit — Equipment Rental Platform
 
-Fieldkit is a frontend for a local equipment-rental marketplace. This first
-milestone establishes the brand, responsive public homepage, and visual
-foundation for the customer, owner, and admin experiences described in the
-assignment.
+Fieldkit is a frontend for a local equipment-rental marketplace. The first
+milestones establish the public homepage and searchable equipment catalog,
+setting up the visual foundation for the customer, owner, and admin experiences
+described in the assignment.
 
-## Milestone 1 — 10%
+## Completed milestones — 20%
 
 Implemented:
 
-- Responsive marketplace landing page with navigation and footer
+- **10% — Marketplace foundation:** Responsive homepage, navigation, and footer
 - Hero, equipment categories, six sample featured listings, benefits, “how it
   works,” and four sample customer stories
 - Framer Motion reveal and stagger animations
-- Page metadata and a shared responsive design system
+- **20% — Equipment catalog:** `/equipment` route with responsive listing cards,
+  name/location search, category, rental period, price, and availability filters,
+  and price/recently-added sorting
+- Shared header, footer, listing data, and responsive design system
 
-Listings, metrics, and customer stories are illustrative preview content. They
-are not connected to a backend. Authentication, equipment search, booking,
+Listings, metrics, availability, ratings, and customer stories are illustrative
+preview content. The catalog filters run in the browser over sample data and
+are not connected to a backend. Authentication, equipment details, booking,
 payments, and dashboards are planned for later milestones.
 
 ## Getting started
