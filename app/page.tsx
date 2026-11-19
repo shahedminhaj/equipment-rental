@@ -229,8 +229,8 @@ export default function Home() {
                       <p><strong>{item.rate}</strong> <span>/ {item.period}</span></p>
                       <Link
                         className="details-arrow"
-                        href={`/equipment/${item.id}`}
-                        aria-label={`View details for ${item.name}`}
+                        href="/equipment"
+                        aria-label={`Browse live equipment like ${item.name}`}
                       >
                         ↗
                       </Link>

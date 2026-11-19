@@ -2,15 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { equipment } from "../data/equipment";
-import type { RentalType } from "../data/equipment";
+import { useEffect, useMemo, useState } from "react";
+import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 
 type SortOrder = "recent" | "price-low" | "price-high";
 
-const rentalTypes: RentalType[] = ["Daily", "Weekly", "Monthly"];
+const rentalTypes: EquipmentListing["rentalType"][] = ["Daily", "Weekly", "Monthly"];
 
 export function EquipmentBrowser() {
+  const [listings, setListings] = useState<EquipmentListing[]>([]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [rentalType, setRentalType] = useState("");
@@ -18,10 +18,47 @@ export function EquipmentBrowser() {
   const [minimumPrice, setMinimumPrice] = useState("");
   const [maximumPrice, setMaximumPrice] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("recent");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadListings() {
+      setIsLoading(true);
+      setError("");
+      try {
+        const firstPage = await apiRequest<{
+          items: EquipmentListing[];
+          pages: number;
+        }>("/equipment?limit=100");
+        const allListings = [...firstPage.items];
+        for (let page = 2; page <= firstPage.pages; page += 1) {
+          const nextPage = await apiRequest<{ items: EquipmentListing[] }>(
+            `/equipment?limit=100&page=${page}`,
+          );
+          allListings.push(...nextPage.items);
+        }
+        if (!cancelled) setListings(allListings);
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "Could not load equipment");
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    void loadListings();
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   const categories = useMemo(
-    () => [...new Set(equipment.map((item) => item.category))].sort(),
-    [],
+    () => [...new Set(listings.map((item) => item.category))].sort(),
+    [listings],
   );
 
   const filteredEquipment = useMemo(() => {
@@ -29,7 +66,7 @@ export function EquipmentBrowser() {
     const min = minimumPrice === "" ? null : Number(minimumPrice);
     const max = maximumPrice === "" ? null : Number(maximumPrice);
 
-    return equipment
+    return listings
       .filter((item) => {
         const matchesSearch =
           searchTerm === "" ||
@@ -37,12 +74,11 @@ export function EquipmentBrowser() {
             .toLocaleLowerCase()
             .includes(searchTerm);
         const matchesCategory = category === "" || item.category === category;
-        const matchesRentalType =
-          rentalType === "" || item.rentalType === rentalType;
+        const matchesRentalType = rentalType === "" || item.rentalType === rentalType;
         const matchesAvailability =
           availability === "" ||
-          (availability === "available" && item.available) ||
-          (availability === "unavailable" && !item.available);
+          (availability === "available" && item.availableQuantity > 0) ||
+          (availability === "unavailable" && item.availableQuantity === 0);
         const matchesMinimum = min === null || item.price >= min;
         const matchesMaximum = max === null || item.price <= max;
 
@@ -58,11 +94,12 @@ export function EquipmentBrowser() {
       .sort((first, second) => {
         if (sortOrder === "price-low") return first.price - second.price;
         if (sortOrder === "price-high") return second.price - first.price;
-        return second.addedAt.localeCompare(first.addedAt);
+        return Date.parse(second.createdAt || "") - Date.parse(first.createdAt || "");
       });
   }, [
     availability,
     category,
+    listings,
     maximumPrice,
     minimumPrice,
     query,
@@ -96,13 +133,13 @@ export function EquipmentBrowser() {
           <p className="eyebrow"><span className="eyebrow-line" /> THE FIELDKIT MARKETPLACE</p>
           <h1>Find your next <em>good thing.</em></h1>
           <p>
-            Browse local equipment, compare rental options, and find the right
-            fit for whatever you&apos;re working on.
+            Browse approved equipment from local owners, compare rental options,
+            and book securely with Stripe Checkout.
           </p>
         </div>
         <div className="catalog-intro-note">
-          <span className="catalog-intro-number">09</span>
-          <span>sample listings<br />to get you started</span>
+          <span className="catalog-intro-number">{String(listings.length).padStart(2, "0")}</span>
+          <span>live approved<br />listings</span>
         </div>
       </section>
 
@@ -123,9 +160,7 @@ export function EquipmentBrowser() {
             <select
               aria-label="Sort equipment"
               value={sortOrder}
-              onChange={(event) =>
-                setSortOrder(event.target.value as SortOrder)
-              }
+              onChange={(event) => setSortOrder(event.target.value as SortOrder)}
             >
               <option value="recent">Recently added</option>
               <option value="price-low">Price: low to high</option>
@@ -195,7 +230,7 @@ export function EquipmentBrowser() {
               </select>
             </label>
 
-            <p className="filter-note">More useful filters are coming as the marketplace grows.</p>
+            <p className="filter-note">Only administrator-approved listings can be booked.</p>
           </aside>
 
           <div className="catalog-results">
@@ -204,7 +239,17 @@ export function EquipmentBrowser() {
               {hasActiveFilters && <button type="button" onClick={clearFilters}>Reset all filters <span aria-hidden="true">×</span></button>}
             </div>
 
-            {filteredEquipment.length > 0 ? (
+            {isLoading ? (
+              <div className="catalog-empty" role="status">Loading live equipment...</div>
+            ) : error ? (
+              <div className="catalog-empty" role="alert">
+                <h2>Equipment could not be loaded</h2>
+                <p>{error}</p>
+                <button className="button button-dark" type="button" onClick={() => setReloadKey((key) => key + 1)}>
+                  Try again
+                </button>
+              </div>
+            ) : filteredEquipment.length > 0 ? (
               <div className="equipment-grid catalog-grid">
                 {filteredEquipment.map((item) => (
                   <article className="equipment-card" key={item.id}>
@@ -216,24 +261,21 @@ export function EquipmentBrowser() {
                         unoptimized
                         sizes="(max-width: 620px) 100vw, (max-width: 1000px) 50vw, 33vw"
                       />
-                      <span className="equipment-tag"><span />{item.tag}</span>
-                      <span className={`availability-badge${item.available ? "" : " is-unavailable"}`}>
-                        <span />{item.available ? `${item.availableQuantity} available` : "Currently rented"}
+                      <span className="equipment-tag"><span />{item.rentalType} rental</span>
+                      <span className={`availability-badge${item.availableQuantity ? "" : " is-unavailable"}`}>
+                        <span />{item.availableQuantity ? `${item.availableQuantity} available` : "Currently rented"}
                       </span>
                     </div>
                     <div className="equipment-content">
                       <div className="equipment-category">
-                        <span>{item.category}</span><span className="rating">★ {item.rating}</span>
+                        <span>{item.category}</span><span className="rating">{item.rentalType}</span>
                       </div>
                       <h2>{item.name}</h2>
                       <p className="equipment-location"><span aria-hidden="true">⌖</span> {item.location}</p>
                       <div className="equipment-bottom">
-                        <p><strong>{item.rate}</strong> <span>/ {item.period}</span></p>
-                        <Link
-                          className="details-coming-soon"
-                          href={`/equipment/${item.id}`}
-                        >
-                          View details <span aria-hidden="true">↗</span>
+                        <p><strong>{formatCurrency(item.price)}</strong> <span>/ {rentalPeriod(item.rentalType)}</span></p>
+                        <Link className="details-coming-soon" href={`/equipment/${item.id}`}>
+                          Book now <span aria-hidden="true">↗</span>
                         </Link>
                       </div>
                     </div>
@@ -243,16 +285,25 @@ export function EquipmentBrowser() {
             ) : (
               <div className="catalog-empty">
                 <span aria-hidden="true">⌕</span>
-                <h2>No equipment found</h2>
-                <p>Try a different search or relax one of your filters.</p>
-                <button className="button button-dark" type="button" onClick={clearFilters}>Clear filters</button>
+                <h2>{listings.length ? "No equipment found" : "No approved listings yet"}</h2>
+                <p>
+                  {listings.length
+                    ? "Try a different search or relax one of your filters."
+                    : "An owner must create a listing and an administrator must approve it before it can be booked."}
+                </p>
+                {hasActiveFilters && (
+                  <button className="button button-dark" type="button" onClick={clearFilters}>
+                    Clear filters
+                  </button>
+                )}
               </div>
             )}
 
-            <p className="sample-note">
-              Sample marketplace preview — listings, availability, ratings, and
-              prices are illustrative, not live inventory.
-            </p>
+            {!isLoading && !error && listings.length > 0 && (
+              <p className="sample-note">
+                Live approved inventory. The server rechecks availability and price when you book.
+              </p>
+            )}
           </div>
         </div>
       </section>
