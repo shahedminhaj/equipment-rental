@@ -2,107 +2,106 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 
 type SortOrder = "recent" | "price-low" | "price-high";
 
 const rentalTypes: EquipmentListing["rentalType"][] = ["Daily", "Weekly", "Monthly"];
 
+type CatalogResponse = {
+  items: EquipmentListing[];
+  total: number;
+  page: number;
+  pages: number;
+};
+
+type Category = { name: string; count: number };
+
 export function EquipmentBrowser() {
   const [listings, setListings] = useState<EquipmentListing[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [category, setCategory] = useState("");
   const [rentalType, setRentalType] = useState("");
   const [availability, setAvailability] = useState("");
   const [minimumPrice, setMinimumPrice] = useState("");
   const [maximumPrice, setMaximumPrice] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("recent");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    let cancelled = false;
+    const timeout = window.setTimeout(() => setDebouncedQuery(query), 300);
+    return () => window.clearTimeout(timeout);
+  }, [query]);
+
+  useEffect(() => {
+    let active = true;
+    apiRequest<{ items: Category[] }>("/equipment/categories")
+      .then((response) => {
+        if (active) setCategories(response.items);
+      })
+      .catch(() => {
+        if (active) setCategories([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQuery, category, rentalType, availability, minimumPrice, maximumPrice, sortOrder]);
+
+  useEffect(() => {
+    let active = true;
+    const params = new URLSearchParams({ page: String(page), limit: "9" });
+    if (debouncedQuery.trim()) params.set("search", debouncedQuery.trim());
+    if (category) params.set("category", category);
+    if (rentalType) params.set("rentalType", rentalType);
+    if (availability) params.set("available", availability === "available" ? "true" : "false");
+    if (minimumPrice) params.set("minPrice", minimumPrice);
+    if (maximumPrice) params.set("maxPrice", maximumPrice);
+    if (sortOrder !== "recent") params.set("sort", sortOrder);
 
     async function loadListings() {
       setIsLoading(true);
       setError("");
       try {
-        const firstPage = await apiRequest<{
-          items: EquipmentListing[];
-          pages: number;
-        }>("/equipment?limit=100");
-        const allListings = [...firstPage.items];
-        for (let page = 2; page <= firstPage.pages; page += 1) {
-          const nextPage = await apiRequest<{ items: EquipmentListing[] }>(
-            `/equipment?limit=100&page=${page}`,
-          );
-          allListings.push(...nextPage.items);
-        }
-        if (!cancelled) setListings(allListings);
+        const response = await apiRequest<CatalogResponse>(`/equipment?${params.toString()}`);
+        if (!active) return;
+        setListings(response.items);
+        setTotal(response.total);
+        setTotalPages(Math.max(1, response.pages));
+        if (response.pages > 0 && page > response.pages) setPage(response.pages);
       } catch (loadError) {
-        if (!cancelled) {
+        if (active) {
           setError(loadError instanceof Error ? loadError.message : "Could not load equipment");
+          setListings([]);
         }
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     }
 
     void loadListings();
     return () => {
-      cancelled = true;
+      active = false;
     };
-  }, [reloadKey]);
-
-  const categories = useMemo(
-    () => [...new Set(listings.map((item) => item.category))].sort(),
-    [listings],
-  );
-
-  const filteredEquipment = useMemo(() => {
-    const searchTerm = query.trim().toLocaleLowerCase();
-    const min = minimumPrice === "" ? null : Number(minimumPrice);
-    const max = maximumPrice === "" ? null : Number(maximumPrice);
-
-    return listings
-      .filter((item) => {
-        const matchesSearch =
-          searchTerm === "" ||
-          `${item.name} ${item.location} ${item.category}`
-            .toLocaleLowerCase()
-            .includes(searchTerm);
-        const matchesCategory = category === "" || item.category === category;
-        const matchesRentalType = rentalType === "" || item.rentalType === rentalType;
-        const matchesAvailability =
-          availability === "" ||
-          (availability === "available" && item.availableQuantity > 0) ||
-          (availability === "unavailable" && item.availableQuantity === 0);
-        const matchesMinimum = min === null || item.price >= min;
-        const matchesMaximum = max === null || item.price <= max;
-
-        return (
-          matchesSearch &&
-          matchesCategory &&
-          matchesRentalType &&
-          matchesAvailability &&
-          matchesMinimum &&
-          matchesMaximum
-        );
-      })
-      .sort((first, second) => {
-        if (sortOrder === "price-low") return first.price - second.price;
-        if (sortOrder === "price-high") return second.price - first.price;
-        return Date.parse(second.createdAt || "") - Date.parse(first.createdAt || "");
-      });
   }, [
     availability,
     category,
-    listings,
+    debouncedQuery,
     maximumPrice,
     minimumPrice,
-    query,
+    page,
+    reloadKey,
     rentalType,
     sortOrder,
   ]);
@@ -124,6 +123,7 @@ export function EquipmentBrowser() {
     setMinimumPrice("");
     setMaximumPrice("");
     setSortOrder("recent");
+    setPage(1);
   }
 
   return (
@@ -139,7 +139,7 @@ export function EquipmentBrowser() {
         </div>
         <div className="catalog-intro-note">
           <span className="catalog-intro-number">{String(listings.length).padStart(2, "0")}</span>
-          <span>live approved<br />listings</span>
+          <span>results on<br />this page</span>
         </div>
       </section>
 
@@ -180,7 +180,9 @@ export function EquipmentBrowser() {
               <span>Category</span>
               <select value={category} onChange={(event) => setCategory(event.target.value)}>
                 <option value="">All categories</option>
-                {categories.map((option) => <option key={option} value={option}>{option}</option>)}
+                {categories.map((option) => (
+                  <option key={option.name} value={option.name}>{option.name}</option>
+                ))}
               </select>
             </label>
 
@@ -235,7 +237,7 @@ export function EquipmentBrowser() {
 
           <div className="catalog-results">
             <div className="results-heading" aria-live="polite">
-              <p><strong>{filteredEquipment.length}</strong> {filteredEquipment.length === 1 ? "piece" : "pieces"} of equipment</p>
+              <p><strong>{total}</strong> {total === 1 ? "piece" : "pieces"} of equipment found</p>
               {hasActiveFilters && <button type="button" onClick={clearFilters}>Reset all filters <span aria-hidden="true">×</span></button>}
             </div>
 
@@ -249,9 +251,9 @@ export function EquipmentBrowser() {
                   Try again
                 </button>
               </div>
-            ) : filteredEquipment.length > 0 ? (
+            ) : listings.length > 0 ? (
               <div className="equipment-grid catalog-grid">
-                {filteredEquipment.map((item) => (
+                {listings.map((item) => (
                   <article className="equipment-card" key={item.id}>
                     <div className="equipment-image-wrap">
                       <Image
@@ -275,7 +277,7 @@ export function EquipmentBrowser() {
                       <div className="equipment-bottom">
                         <p><strong>{formatCurrency(item.price)}</strong> <span>/ {rentalPeriod(item.rentalType)}</span></p>
                         <Link className="details-coming-soon" href={`/equipment/${item.id}`}>
-                          Book now <span aria-hidden="true">↗</span>
+                          View details <span aria-hidden="true">↗</span>
                         </Link>
                       </div>
                     </div>
@@ -285,12 +287,17 @@ export function EquipmentBrowser() {
             ) : (
               <div className="catalog-empty">
                 <span aria-hidden="true">⌕</span>
-                <h2>{listings.length ? "No equipment found" : "No approved listings yet"}</h2>
+                <h2>{hasActiveFilters ? "No equipment found" : "No approved listings yet"}</h2>
                 <p>
-                  {listings.length
+                  {hasActiveFilters
                     ? "Try a different search or relax one of your filters."
-                    : "An owner must create a listing and an administrator must approve it before it can be booked."}
+                    : "No equipment has been approved yet. An equipment owner needs to submit a listing, then an administrator can approve it for the marketplace."}
                 </p>
+                {!hasActiveFilters && (
+                  <Link className="button button-dark catalog-owner-link" href="/get-started">
+                    Learn how to list equipment <span aria-hidden="true">→</span>
+                  </Link>
+                )}
                 {hasActiveFilters && (
                   <button className="button button-dark" type="button" onClick={clearFilters}>
                     Clear filters
@@ -300,8 +307,28 @@ export function EquipmentBrowser() {
             )}
 
             {!isLoading && !error && listings.length > 0 && (
+              <nav className="catalog-pagination" aria-label="Equipment pages">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                >
+                  ← Previous
+                </button>
+                <span>Page {page}</span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Next →
+                </button>
+              </nav>
+            )}
+
+            {!isLoading && !error && listings.length > 0 && (
               <p className="sample-note">
-                Live approved inventory. The server rechecks availability and price when you book.
+                Live approved inventory. Prices and availability are rechecked at booking time.
               </p>
             )}
           </div>
