@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { AccountAccess } from "./account-access";
 import { SiteFooter, SiteHeader } from "./site-shell";
 import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
-import { clearAuth, type AuthUser } from "../lib/auth";
+import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
 
 type ManagedEquipment = EquipmentListing & { status: "pending" | "approved" | "rejected" };
 type ManagedUser = AuthUser & { disabled?: boolean };
@@ -35,6 +37,7 @@ function authHeaders(token: string) {
 }
 
 export function ManagementDashboard() {
+  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState("");
   const [isChecking, setIsChecking] = useState(true);
@@ -50,6 +53,11 @@ export function ManagementDashboard() {
           headers: authHeaders(storedToken),
         });
         if (cancelled) return;
+        saveAuth(storedToken, currentUser);
+        if (currentUser.role === "customer") {
+          router.replace("/account");
+          return;
+        }
         setToken(storedToken);
         setUser(currentUser);
       } catch (sessionError) {
@@ -65,9 +73,13 @@ export function ManagementDashboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [router]);
 
   function handleAuthenticated(accessToken: string, currentUser: AuthUser) {
+    if (currentUser.role === "customer") {
+      router.replace("/account");
+      return;
+    }
     setError("");
     setToken(accessToken);
     setUser(currentUser);
@@ -86,8 +98,10 @@ export function ManagementDashboard() {
         <div className="account-page-heading">
           <div>
             <p className="eyebrow">FIELKIT MANAGEMENT</p>
-            <h1>Owner / admin dashboard</h1>
-            <p>Create and manage listings, or review marketplace submissions.</p>
+            <h1>{user?.role === "admin" ? "Admin dashboard" : user?.role === "owner" ? "Owner dashboard" : "Management sign in"}</h1>
+            <p>{user?.role === "admin"
+              ? "Review listings, manage users, and track marketplace activity."
+              : "Manage equipment listings and rental requests."}</p>
           </div>
           {user && <button className="booking-cancel" type="button" onClick={signOut}>Sign out</button>}
         </div>
@@ -97,7 +111,12 @@ export function ManagementDashboard() {
         ) : !user ? (
           <>
             {error && <p className="booking-field-error" role="alert">{error}</p>}
-            <AccountAccess onAuthenticated={handleAuthenticated} />
+            <AccountAccess
+              onAuthenticated={handleAuthenticated}
+              allowRegistration={false}
+              allowGoogle={false}
+              allowAdminSetup
+            />
           </>
         ) : user.role === "owner" ? (
           <OwnerManagement token={token} />
@@ -368,12 +387,14 @@ function AdminAnalyticsPanel({
     <>
       <div className="admin-metrics-grid">
         {metrics.map((metric) => (
-          <article className="admin-metric-card" key={metric.label}>
-            <p>{metric.label}</p>
-            <strong>{typeof metric.value === "number"
-              ? new Intl.NumberFormat("en-BD").format(metric.value)
-              : metric.value}</strong>
-          </article>
+          <Card className="admin-metric-card" key={metric.label}>
+            <CardContent className="p-0">
+              <p>{metric.label}</p>
+              <strong>{typeof metric.value === "number"
+                ? new Intl.NumberFormat("en-BD").format(metric.value)
+                : metric.value}</strong>
+            </CardContent>
+          </Card>
         ))}
       </div>
       <div className="admin-charts-grid">
@@ -596,10 +617,11 @@ function AdminManagement({
                     <label className="management-role-select">Role
                       <select
                         value={user.role}
-                        disabled={user.id === currentUser.id}
+                        disabled={user.id === currentUser.id || user.role === "admin"}
                         onChange={(event) => changeRole(user.id, event.target.value as AuthUser["role"])}
                       >
-                        <option value="customer">Customer</option><option value="owner">Owner</option><option value="admin">Admin</option>
+                        <option value="customer">Customer</option><option value="owner">Owner</option>
+                        {user.role === "admin" && <option value="admin">Admin</option>}
                       </select>
                     </label>
                     <button

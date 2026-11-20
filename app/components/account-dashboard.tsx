@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { apiRequest, formatCurrency } from "../lib/api";
 import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
 import { GoogleSignInButton } from "./google-sign-in";
@@ -64,6 +70,7 @@ function formatRentalDate(value: string) {
 }
 
 export function AccountDashboard() {
+  const router = useRouter();
   const [token, setToken] = useState("");
   const [profile, setProfile] = useState<AccountUser | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -99,6 +106,11 @@ export function AccountDashboard() {
       try {
         const account = await loadAccountData(savedToken);
         if (cancelled) return;
+        saveAuth(savedToken, account.user);
+        if (account.user.role !== "customer") {
+          router.replace("/dashboard");
+          return;
+        }
         setProfile(account.user);
         setName(account.user.name);
         setEmail(account.user.email);
@@ -120,7 +132,7 @@ export function AccountDashboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [router]);
 
   async function handleAuthentication(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -142,6 +154,10 @@ export function AccountDashboard() {
         },
       );
       saveAuth(response.token, response.user);
+      if (response.user.role !== "customer") {
+        router.replace("/dashboard");
+        return;
+      }
       setToken(response.token);
       setProfile(response.user);
       setName(response.user.name);
@@ -177,6 +193,10 @@ export function AccountDashboard() {
         body: JSON.stringify({ credential }),
       });
       saveAuth(response.token, response.user);
+      if (response.user.role !== "customer") {
+        router.replace("/dashboard");
+        return;
+      }
       setToken(response.token);
       setProfile(response.user);
       setName(response.user.name);
@@ -206,6 +226,10 @@ export function AccountDashboard() {
     setError("");
     try {
       const account = await loadAccountData(token);
+      if (account.user.role !== "customer") {
+        router.replace("/dashboard");
+        return;
+      }
       setProfile(account.user);
       setName(account.user.name);
       setPhone(account.user.phone || "");
@@ -287,8 +311,8 @@ export function AccountDashboard() {
         {isLoading ? (
           <p className="account-message" role="status">Loading your account...</p>
         ) : !isAuthenticated ? (
-          <section className="account-card account-auth-card">
-            <div className="account-card-heading">
+          <Card className="account-card account-auth-card gap-0">
+            <CardHeader className="account-card-heading p-0">
               <span className="eyebrow">CUSTOMER ACCOUNT</span>
               <h2>{authMode === "login" ? "Sign in to Fieldkit" : "Create your account"}</h2>
               <p>
@@ -296,12 +320,14 @@ export function AccountDashboard() {
                   ? "Access your profile and booking history."
                   : "Join Fieldkit to book equipment and track your rentals."}
               </p>
-            </div>
-            <form className="account-form" onSubmit={handleAuthentication}>
+            </CardHeader>
+            <CardContent className="p-0">
+              <form className="account-form" onSubmit={handleAuthentication}>
               {authMode === "register" && (
-                <label>
-                  Full name
-                  <input
+                <div className="account-form-field">
+                  <Label htmlFor="customer-name">Full name</Label>
+                  <Input
+                    id="customer-name"
                     autoComplete="name"
                     maxLength={100}
                     minLength={2}
@@ -309,21 +335,23 @@ export function AccountDashboard() {
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                   />
-                </label>
+                </div>
               )}
-              <label>
-                Email address
-                <input
+              <div className="account-form-field">
+                <Label htmlFor="customer-email">Email address</Label>
+                <Input
+                  id="customer-email"
                   autoComplete="email"
                   type="email"
                   required
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />
-              </label>
-              <label>
-                Password
-                <input
+              </div>
+              <div className="account-form-field">
+                <Label htmlFor="customer-password">Password</Label>
+                <Input
+                  id="customer-password"
                   autoComplete={authMode === "login" ? "current-password" : "new-password"}
                   type="password"
                   minLength={6}
@@ -333,21 +361,25 @@ export function AccountDashboard() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                 />
-              </label>
+              </div>
               {authMode === "register" && (
                 <p className="account-form-hint">
                   Use at least 6 characters with uppercase and lowercase letters.
                 </p>
               )}
-              {error && <p className="account-error" role="alert">{error}</p>}
-              <button className="button button-dark account-submit" type="submit" disabled={isSubmitting}>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <Button className="button button-dark account-submit" type="submit" disabled={isSubmitting}>
                 {isSubmitting
                   ? "Please wait..."
                   : authMode === "login"
                     ? "Sign in"
                     : "Create account"}
                 {!isSubmitting && <span aria-hidden="true">↗</span>}
-              </button>
+              </Button>
               <div className="account-google-signin">
                 <span>OR CONTINUE WITH</span>
                 <GoogleSignInButton
@@ -355,20 +387,21 @@ export function AccountDashboard() {
                   onError={setError}
                 />
               </div>
-            </form>
-            <p className="account-switch">
-              {authMode === "login" ? "New to Fieldkit?" : "Already have an account?"}{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode(authMode === "login" ? "register" : "login");
-                  setError("");
-                }}
-              >
-                {authMode === "login" ? "Create an account" : "Sign in"}
-              </button>
-            </p>
-          </section>
+              </form>
+              <p className="account-switch">
+                {authMode === "login" ? "New to Fieldkit?" : "Already have an account?"}{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode(authMode === "login" ? "register" : "login");
+                    setError("");
+                  }}
+                >
+                  {authMode === "login" ? "Create an account" : "Sign in"}
+                </button>
+              </p>
+            </CardContent>
+          </Card>
         ) : !accountDataLoaded ? (
           <section className="account-card account-load-error">
             {error && <p className="account-error" role="alert">{error}</p>}

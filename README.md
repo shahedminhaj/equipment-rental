@@ -5,7 +5,7 @@ milestones establish the public homepage and searchable equipment catalog,
 setting up the visual foundation for the customer, owner, and admin experiences
 described in the assignment.
 
-## Completed milestones — 60%
+## Completed milestones — 70%
 
 Implemented:
 
@@ -25,6 +25,9 @@ Implemented:
   management, and admin listing review and user-role controls
 - **60% — Admin analytics:** Live marketplace totals and 12-month booking and
   paid-revenue charts in the admin dashboard
+- **70% — Admin bootstrap and role-aware experience:** One-time Admin setup
+  using backend environment credentials, separate role dashboards, visible
+  signed-in role/navigation, and shadcn/ui primitives for the account flows
 - Shared header, footer, listing data, and responsive design system
 
 Homepage stories and metrics remain illustrative preview content. Live catalog
@@ -50,6 +53,19 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-oauth-client-id
 sign-in; use the same client ID in the backend `.env`. Keep database, JWT,
 admin, and Stripe secrets in the backend `.env`.
 
+The header's **Sign up** link is for customer accounts. **Get started** offers
+customer and admin entry points. To create the first Admin, open `/dashboard`
+and use **Set up the first admin** while setup is available. Enter the exact
+`ADMIN_EMAIL` and `ADMIN_PASSWORD` configured in the backend `.env`; setup is
+closed after the single Admin account is created. Admins can then sign in at
+`/dashboard`. Public sign-up and Google sign-in create customer accounts only.
+Authentication routes users to `/account` and administrators to `/dashboard`
+based on their backend role.
+
+The backend uses `MONGODB_DB` to select the application database. Set it to
+`fieldkit` (as in the backend `.env.example`) to keep Fieldkit data separate from
+other projects on the same MongoDB cluster.
+
 ## Scripts
 
 - `npm run dev` — start the development server
@@ -60,7 +76,7 @@ admin, and Stripe secrets in the backend `.env`.
 ## Stack and packages
 
 - Next.js App Router, React, and TypeScript
-- Tailwind CSS 4 for the stylesheet pipeline
+- Tailwind CSS 4 and shadcn/ui (Base UI primitives) for the UI
 - Framer Motion for homepage section animations
 - ESLint for linting
 
