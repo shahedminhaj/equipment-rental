@@ -1771,6 +1771,35 @@ a {
   background: #f7f6f0;
 }
 
+.dashboard-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 5px;
+  border: 1px solid #e0e2d7;
+  border-radius: 8px;
+  background: #fff;
+  width: fit-content;
+}
+
+.dashboard-tabs button {
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.dashboard-tabs button.is-active {
+  background: var(--olive-dark);
+  color: #fff;
+}
+
 .account-shell {
   width: min(1120px, 100%);
   margin: 0 auto;
@@ -2060,11 +2089,22 @@ a {
   color: #984838;
 }
 
-.account-booking-bottom a {
+.account-booking-bottom a,
+.account-booking-bottom button {
   margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--olive);
+  font: inherit;
   font-size: 10px;
   font-weight: 650;
+  cursor: pointer;
+}
+
+.account-booking-bottom button {
+  margin-left: 0;
+  color: #a44f3c;
 }
 
 .account-empty-bookings {
