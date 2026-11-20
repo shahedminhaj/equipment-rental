@@ -89,6 +89,7 @@ approved listings when the equipment collection is empty.
 - `npm run build` — create a production build
 - `npm start` — serve the production build
 - `npm run lint` — run ESLint
+- `npm run typecheck` — run TypeScript without dev-only generated route types
 
 ## Stack and packages
 
