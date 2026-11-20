@@ -5,7 +5,7 @@ milestones establish the public homepage and searchable equipment catalog,
 setting up the visual foundation for the customer, owner, and admin experiences
 described in the assignment.
 
-## Completed milestones — 50%
+## Completed milestones — 60%
 
 Implemented:
 
@@ -23,6 +23,8 @@ Implemented:
 - **50% — Customer and management dashboards:** Account registration/sign-in,
   profile editing, booking history and receipts, owner listing/booking
   management, and admin listing review and user-role controls
+- **60% — Admin analytics:** Live marketplace totals and 12-month booking and
+  paid-revenue charts in the admin dashboard
 - Shared header, footer, listing data, and responsive design system
 
 Homepage stories and metrics remain illustrative preview content. Live catalog

@@ -19,6 +19,16 @@ type OwnerBooking = {
   totalAmount: number;
   customer?: { name?: string; email?: string } | null;
 };
+type AdminAnalytics = {
+  totalUsers: number;
+  totalEquipment: number;
+  totalBookings: number;
+  pendingApprovals: number;
+  completedRentals: number;
+  totalRevenue: number;
+  monthlyBookings: { month: string; bookings: number }[];
+  monthlyRevenue: { month: string; revenue: number }[];
+};
 
 function authHeaders(token: string) {
   return { Authorization: `Bearer ${token}` };
@@ -328,6 +338,101 @@ function OwnerManagement({ token }: { token: string }) {
   );
 }
 
+function AdminAnalyticsPanel({
+  analytics,
+  isLoading,
+  error,
+}: {
+  analytics: AdminAnalytics | null;
+  isLoading: boolean;
+  error: string;
+}) {
+  if (isLoading) {
+    return <p role="status">Loading marketplace analytics...</p>;
+  }
+  if (error) {
+    return <p className="booking-field-error" role="alert">{error}</p>;
+  }
+  if (!analytics) return null;
+
+  const metrics = [
+    { label: "Active users", value: analytics.totalUsers },
+    { label: "Equipment listings", value: analytics.totalEquipment },
+    { label: "Total bookings", value: analytics.totalBookings },
+    { label: "Pending approvals", value: analytics.pendingApprovals },
+    { label: "Completed rentals", value: analytics.completedRentals },
+    { label: "Paid revenue", value: formatCurrency(analytics.totalRevenue) },
+  ];
+
+  return (
+    <>
+      <div className="admin-metrics-grid">
+        {metrics.map((metric) => (
+          <article className="admin-metric-card" key={metric.label}>
+            <p>{metric.label}</p>
+            <strong>{typeof metric.value === "number"
+              ? new Intl.NumberFormat("en-BD").format(metric.value)
+              : metric.value}</strong>
+          </article>
+        ))}
+      </div>
+      <div className="admin-charts-grid">
+        <AdminMonthlyChart
+          title="Bookings"
+          items={analytics.monthlyBookings.map(({ month, bookings }) => ({ month, value: bookings }))}
+        />
+        <AdminMonthlyChart
+          title="Paid revenue"
+          items={analytics.monthlyRevenue.map(({ month, revenue }) => ({ month, value: revenue }))}
+          isCurrency
+        />
+      </div>
+    </>
+  );
+}
+
+function AdminMonthlyChart({
+  title,
+  items,
+  isCurrency = false,
+}: {
+  title: string;
+  items: { month: string; value: number }[];
+  isCurrency?: boolean;
+}) {
+  const maximum = Math.max(0, ...items.map((item) => item.value));
+  const compactNumber = new Intl.NumberFormat("en-BD", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
+  const monthLabel = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" });
+
+  return (
+    <section className="admin-chart">
+      <h3>Monthly {title.toLowerCase()} · last 12 months</h3>
+      <div className="admin-chart-bars">
+        {items.map((item) => {
+          const value = isCurrency ? formatCurrency(item.value) : new Intl.NumberFormat("en-BD").format(item.value);
+          const height = maximum > 0 && item.value > 0 ? Math.max((item.value / maximum) * 100, 4) : 0;
+          return (
+            <div className="admin-chart-column" key={item.month} title={`${item.month}: ${value}`}>
+              <span className="admin-chart-value">
+                {isCurrency ? `৳${compactNumber.format(item.value)}` : compactNumber.format(item.value)}
+              </span>
+              <div className="admin-chart-track" aria-hidden="true">
+                <span className="admin-chart-bar" style={{ height: `${height}%` }} />
+              </div>
+              <span className="admin-chart-month">
+                {monthLabel.format(new Date(`${item.month}-01T00:00:00Z`))}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function AdminManagement({
   token,
   currentUser,
@@ -337,8 +442,11 @@ function AdminManagement({
 }) {
   const [equipment, setEquipment] = useState<ManagedEquipment[]>([]);
   const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [analyticsError, setAnalyticsError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -366,7 +474,27 @@ function AdminManagement({
       }
     }
 
+    async function loadAdminAnalytics() {
+      setIsAnalyticsLoading(true);
+      setAnalyticsError("");
+      try {
+        const response = await apiRequest<AdminAnalytics>("/analytics/admin", {
+          headers: authHeaders(token),
+        });
+        if (!cancelled) setAnalytics(response);
+      } catch (analyticsLoadError) {
+        if (!cancelled) {
+          setAnalyticsError(analyticsLoadError instanceof Error
+            ? analyticsLoadError.message
+            : "Could not load marketplace analytics");
+        }
+      } finally {
+        if (!cancelled) setIsAnalyticsLoading(false);
+      }
+    }
+
     void loadAdminData();
+    void loadAdminAnalytics();
     return () => {
       cancelled = true;
     };
@@ -419,6 +547,17 @@ function AdminManagement({
       {error && <p className="booking-field-error" role="alert">{error}</p>}
       {isLoading ? <p role="status">Loading admin data...</p> : (
         <>
+          <section className="management-section">
+            <div className="management-section-heading">
+              <div><p className="eyebrow">PLATFORM OVERVIEW</p><h2>Marketplace analytics</h2></div>
+            </div>
+            <AdminAnalyticsPanel
+              analytics={analytics}
+              isLoading={isAnalyticsLoading}
+              error={analyticsError}
+            />
+          </section>
+
           <section className="management-section">
             <div className="management-section-heading">
               <div><p className="eyebrow">LISTING REVIEW</p><h2>Pending equipment ({equipment.length})</h2></div>

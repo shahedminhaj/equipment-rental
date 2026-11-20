@@ -3400,6 +3400,97 @@ a {
   margin: 0;
 }
 
+.admin-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+
+.admin-metric-card {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #e8e7df;
+  background: #fff;
+}
+
+.admin-metric-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.admin-metric-card strong {
+  overflow-wrap: anywhere;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+}
+
+.admin-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-chart {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #e8e7df;
+  background: #fff;
+}
+
+.admin-chart h3 {
+  margin: 0 0 18px;
+  font-size: 13px;
+}
+
+.admin-chart-bars {
+  display: grid;
+  height: 150px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.admin-chart-column {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: 18px minmax(0, 1fr) 16px;
+  gap: 5px;
+  text-align: center;
+}
+
+.admin-chart-value,
+.admin-chart-month {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8px;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.admin-chart-value {
+  align-self: end;
+}
+
+.admin-chart-track {
+  display: flex;
+  height: 100%;
+  align-items: flex-end;
+  overflow: hidden;
+  background: #f3f3ed;
+}
+
+.admin-chart-bar {
+  width: 100%;
+  background: var(--olive);
+  transition: height 180ms ease;
+}
+
+.admin-chart-month {
+  align-self: start;
+}
+
 .management-list {
   display: grid;
   gap: 10px;
@@ -3546,6 +3637,10 @@ a {
 
 @media (max-width: 680px) {
   .management-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-charts-grid {
     grid-template-columns: 1fr;
   }
 
