@@ -29,12 +29,12 @@ export default function GetStartedPage() {
                   <h2>Rent equipment</h2>
                 </CardHeader>
                 <CardContent className="role-choice-card-content p-0">
-                  <p>Sign in or create an account to find equipment and manage your bookings.</p>
+                  <p>Sign in to rent equipment, or create an account to get started. To publish listings, an administrator must first grant your account the Owner role.</p>
                   <span className="role-choice-action">Continue as user <span aria-hidden="true">→</span></span>
                 </CardContent>
               </Card>
             </Link>
-            <Link className="role-choice-link" href="/dashboard">
+            <Link className="role-choice-link" href="/admin/dashboard">
               <Card className="role-choice-card">
                 <CardHeader className="role-choice-card-header p-0">
                   <span className="role-choice-icon role-choice-icon-admin" aria-hidden="true">A</span>
@@ -49,7 +49,7 @@ export default function GetStartedPage() {
             </Link>
           </div>
           <p className="role-choice-note">
-            The first admin account can be set up once from the admin sign-in screen using the backend environment credentials.
+            Owner listings are submitted for approval before they appear in Browse equipment. The admin account is created automatically from the credentials in the backend environment.
           </p>
         </div>
       </main>
