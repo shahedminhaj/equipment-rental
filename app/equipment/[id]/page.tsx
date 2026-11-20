@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { EquipmentBooking } from "../../components/equipment-booking";
+import { FavoriteButton } from "../../components/favorite-button";
 import { SiteFooter, SiteHeader } from "../../components/site-shell";
 import { formatCurrency, rentalPeriod, type EquipmentListing } from "../../lib/api";
 
@@ -140,6 +141,7 @@ async function EquipmentDetailsContent({
               <span>{item.availableQuantity ? "Available to book" : "Currently rented"}</span>
               {item.availableQuantity > 0 && <strong>{item.availableQuantity} left</strong>}
             </div>
+            <FavoriteButton equipmentId={item.id} />
             <EquipmentBooking item={item} />
             <p className="booking-secure-note">Secure payment is processed by Stripe Checkout.</p>
           </aside>
