@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiRequest, formatCurrency } from "../lib/api";
+import { apiRequest, formatCurrency, type EquipmentListing } from "../lib/api";
 import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
 import { GoogleSignInButton } from "./google-sign-in";
+import { useToast } from "./toast-provider";
 
 type AccountUser = AuthUser & { phone?: string; address?: string };
 
@@ -34,10 +35,13 @@ type Payment = {
   createdAt: string;
 };
 
+type Favorite = { favoriteId: string; equipment: EquipmentListing | null };
+
 type AccountData = {
   user: AccountUser;
   bookings: Booking[];
   payments: Payment[];
+  favorites: Favorite[];
 };
 
 type AuthResponse = {
@@ -49,13 +53,19 @@ async function loadAccountData(token: string): Promise<AccountData> {
   const headers = { Authorization: `Bearer ${token}` };
   const profile = await apiRequest<{ user: AccountUser }>("/profile", { headers });
   if (profile.user.role !== "customer") {
-    return { user: profile.user, bookings: [], payments: [] };
+    return { user: profile.user, bookings: [], payments: [], favorites: [] };
   }
-  const [bookings, payments] = await Promise.all([
+  const [bookings, payments, favorites] = await Promise.all([
     apiRequest<{ items: Booking[] }>("/bookings/mine", { headers }),
     apiRequest<{ items: Payment[] }>("/payments/mine", { headers }),
+    apiRequest<{ items: Favorite[] }>("/favorites", { headers }),
   ]);
-  return { user: profile.user, bookings: bookings.items, payments: payments.items };
+  return {
+    user: profile.user,
+    bookings: bookings.items,
+    payments: payments.items,
+    favorites: favorites.items,
+  };
 }
 
 function formatRentalDate(value: string) {
@@ -69,12 +79,19 @@ function formatRentalDate(value: string) {
       }).format(date);
 }
 
-export function AccountDashboard() {
+export function AccountDashboard({
+  initialView = "overview",
+}: {
+  initialView?: "overview" | "rentals" | "favorites" | "profile";
+}) {
   const router = useRouter();
+  const { notify } = useToast();
   const [token, setToken] = useState("");
   const [profile, setProfile] = useState<AccountUser | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [view, setView] = useState(initialView);
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -118,6 +135,7 @@ export function AccountDashboard() {
         setAddress(account.user.address || "");
         setBookings(account.bookings);
         setPayments(account.payments);
+      setFavorites(account.favorites);
         setAccountDataLoaded(true);
       } catch (loadError) {
         if (!cancelled) {
@@ -172,6 +190,7 @@ export function AccountDashboard() {
       setAddress(account.user.address || "");
       setBookings(account.bookings);
       setPayments(account.payments);
+      setFavorites(account.favorites);
       setAccountDataLoaded(true);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Could not sign in.");
@@ -211,6 +230,7 @@ export function AccountDashboard() {
       setAddress(account.user.address || "");
       setBookings(account.bookings);
       setPayments(account.payments);
+      setFavorites(account.favorites);
       setAccountDataLoaded(true);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Google sign-in failed.");
@@ -236,6 +256,7 @@ export function AccountDashboard() {
       setAddress(account.user.address || "");
       setBookings(account.bookings);
       setPayments(account.payments);
+      setFavorites(account.favorites);
       setAccountDataLoaded(true);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load your account.");
@@ -266,10 +287,25 @@ export function AccountDashboard() {
       setPhone(result.user.phone || "");
       setAddress(result.user.address || "");
       setNotice("Your profile has been updated.");
+      notify("Your profile has been updated.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Could not update your profile.");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function removeFavorite(equipmentId: string) {
+    if (!token) return;
+    try {
+      await apiRequest(`/favorites/${equipmentId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFavorites((current) => current.filter((item) => item.equipment?.id !== equipmentId));
+      notify("Removed from your favorites.");
+    } catch (removeError) {
+      notify(removeError instanceof Error ? removeError.message : "Could not remove favorite", "error");
     }
   }
 
@@ -279,6 +315,7 @@ export function AccountDashboard() {
     setProfile(null);
     setBookings([]);
     setPayments([]);
+    setFavorites([]);
     setReceiptBooking(null);
     setIsAuthenticated(false);
     setAccountDataLoaded(false);
@@ -422,7 +459,27 @@ export function AccountDashboard() {
             {error && <p className="account-error account-feedback" role="alert">{error}</p>}
             {notice && <p className="account-success account-feedback" role="status">{notice}</p>}
 
+            <nav className="dashboard-tabs" aria-label="Account sections">
+              {([
+                ["overview", "Overview"],
+                ["rentals", "My rentals"],
+                ["favorites", "Favorites"],
+                ["profile", "Profile"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={view === value ? "is-active" : ""}
+                  onClick={() => setView(value)}
+                  aria-current={view === value ? "page" : undefined}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+
             <div className="account-grid">
+              {view !== "rentals" && view !== "favorites" && (
               <section className="account-card">
                 <div className="account-card-heading">
                   <span className="eyebrow">PERSONAL DETAILS</span>
@@ -470,7 +527,9 @@ export function AccountDashboard() {
                   </button>
                 </form>
               </section>
+              )}
 
+              {view !== "favorites" && view !== "profile" && (
               <section className="account-card account-bookings">
                 <div className="account-card-heading account-bookings-heading">
                   <div>
@@ -538,6 +597,51 @@ export function AccountDashboard() {
                   </div>
                 )}
               </section>
+              )}
+
+              {view !== "rentals" && view !== "profile" && (
+              <section className="account-card account-favorites">
+                <div className="account-card-heading account-bookings-heading">
+                  <div>
+                    <span className="eyebrow">SAVED FOR LATER</span>
+                    <h2>Favorite equipment</h2>
+                  </div>
+                  <span className="account-booking-count">{favorites.length}</span>
+                </div>
+                {favorites.length ? (
+                  <div className="account-booking-list">
+                    {favorites.map((favorite) => {
+                      const item = favorite.equipment;
+                      if (!item) return null;
+                      return (
+                        <article className="account-booking" key={favorite.favoriteId}>
+                          <div className="account-booking-top">
+                            <div>
+                              <h3>{item.name}</h3>
+                              <p>{item.category} · {item.location}</p>
+                            </div>
+                            <strong>{formatCurrency(item.price)}</strong>
+                          </div>
+                          <div className="account-booking-bottom">
+                            <Link href={`/equipment/${item.id}`}>View details <span aria-hidden="true">↗</span></Link>
+                            <button type="button" onClick={() => removeFavorite(item.id)}>
+                              Remove favorite
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="account-empty-bookings">
+                    <span aria-hidden="true">♡</span>
+                    <h3>No favorites yet</h3>
+                    <p>Save equipment from its details page to find it here later.</p>
+                    <Link className="button button-dark" href="/equipment">Browse equipment <span aria-hidden="true">↗</span></Link>
+                  </div>
+                )}
+              </section>
+              )}
             </div>
           </div>
         )}
