@@ -1414,6 +1414,33 @@ a {
   opacity: 0.55;
 }
 
+.favorite-button {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 9px 12px;
+  border: 1px solid #d9dccf;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--olive-dark);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.favorite-button:hover,
+.favorite-button.is-active {
+  border-color: var(--olive);
+  background: #f1f4ea;
+}
+
 .booking-card-note,
 .booking-secure-note {
   margin: 9px 0 0;
