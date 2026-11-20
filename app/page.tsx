@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Reveal, StaggerGroup, StaggerItem } from "./components/animations";
+import { FeaturedEquipment } from "./components/featured-equipment";
 import { SiteFooter, SiteHeader } from "./components/site-shell";
-import { equipment } from "./data/equipment";
 
 const categories = [
   {
@@ -198,49 +198,13 @@ export default function Home() {
             <SectionHeading
               eyebrow="GOOD FINDS, CLOSE BY"
               title="A few things worth borrowing."
-              description="Owner-approved picks to get your next project moving."
+              description="Six recently approved finds from verified equipment owners."
             />
             <Link className="text-link featured-link" href="/equipment">
               Browse all equipment <span aria-hidden="true">↗</span>
             </Link>
           </Reveal>
-          <StaggerGroup className="equipment-grid">
-            {equipment.map((item) => (
-              <StaggerItem key={item.name}>
-                <article className="equipment-card">
-                  <div className="equipment-image-wrap">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      unoptimized
-                      sizes="(max-width: 620px) 100vw, (max-width: 1000px) 50vw, 33vw"
-                    />
-                    <span className="equipment-tag"><span />{item.tag}</span>
-                    <span className="favorite-mark" aria-hidden="true">♡</span>
-                  </div>
-                  <div className="equipment-content">
-                    <div className="equipment-category">
-                      <span>{item.category}</span><span className="rating">★ {item.rating}</span>
-                    </div>
-                    <h3>{item.name}</h3>
-                    <p className="equipment-location"><span aria-hidden="true">⌖</span> {item.location}</p>
-                    <div className="equipment-bottom">
-                      <p><strong>{item.rate}</strong> <span>/ {item.period}</span></p>
-                      <Link
-                        className="details-arrow"
-                        href="/equipment"
-                        aria-label={`Browse live equipment like ${item.name}`}
-                      >
-                        ↗
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              </StaggerItem>
-            ))}
-          </StaggerGroup>
-          <p className="sample-note">A preview of the Fieldkit marketplace. Listings shown are illustrative.</p>
+          <FeaturedEquipment />
         </section>
 
         <section className="why-section" id="why-fieldkit">
