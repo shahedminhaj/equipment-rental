@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiRequest } from "../lib/api";
 import { saveAuth, type AuthUser } from "../lib/auth";
+import { useToast } from "./toast-provider";
 import { GoogleSignInButton } from "./google-sign-in";
 
 type AuthResponse = { token: string; user: AuthUser };
@@ -36,6 +37,7 @@ export function AccountAccess({
   const [adminSetupAvailable, setAdminSetupAvailable] = useState(false);
   const [isCheckingSetup, setIsCheckingSetup] = useState(allowAdminSetup);
   const [setupStatusError, setSetupStatusError] = useState("");
+  const { notify } = useToast();
 
   useEffect(() => {
     if (!allowAdminSetup) return;
@@ -63,6 +65,13 @@ export function AccountAccess({
 
   function acceptAuth(response: AuthResponse) {
     saveAuth(response.token, response.user);
+    notify(
+      mode === "register"
+        ? "Account created. Welcome to Fieldkit!"
+        : mode === "admin-setup"
+          ? "Administrator account created."
+          : `Welcome back, ${response.user.name.split(" ")[0]}!`,
+    );
     onAuthenticated(response.token, response.user);
   }
 
@@ -89,7 +98,12 @@ export function AccountAccess({
       );
       acceptAuth(response);
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "Could not sign in");
+      const message = authError instanceof Error ? authError.message : "Could not sign in";
+      setError(
+        mode === "login" && allowAdminSetup && message === "Email or password is incorrect"
+          ? `${message}. Check ADMIN_EMAIL and ADMIN_PASSWORD in the backend .env file, then restart the API so it can sync the configured admin password.`
+          : message,
+      );
     } finally {
       setIsSubmitting(false);
     }
