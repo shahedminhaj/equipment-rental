@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 import { GoogleSignInButton } from "./google-sign-in";
 import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
+import { useToast } from "./toast-provider";
 
 type AuthResponse = {
   token: string;
@@ -49,6 +50,7 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
   const [signedInEmail, setSignedInEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const { notify } = useToast();
   const quantityValue = Number(quantity);
 
   const units = useMemo(
@@ -106,6 +108,7 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
     clearAuth();
     setToken("");
     setSignedInEmail("");
+    notify("You have been signed out.", "info");
   }
 
   async function startCheckout(accessToken: string) {
@@ -153,14 +156,20 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
         saveAuth(accessToken, authResponse.user);
         setToken(accessToken);
         setSignedInEmail(authResponse.user.email);
+        notify(
+          authMode === "register"
+            ? "Account created. Redirecting to Stripe..."
+            : "Signed in. Redirecting to Stripe...",
+        );
       }
       await startCheckout(accessToken);
     } catch (checkoutError) {
-      setError(
+      const message =
         checkoutError instanceof Error
           ? checkoutError.message
-          : "Could not start checkout. Please try again.",
-      );
+          : "Could not start checkout. Please try again.";
+      notify(message, "error");
+      setError(message);
       setIsSubmitting(false);
     }
   }
@@ -176,13 +185,15 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
       saveAuth(authResponse.token, authResponse.user);
       setToken(authResponse.token);
       setSignedInEmail(authResponse.user.email);
+      notify("Google account connected. Redirecting to Stripe...");
       await startCheckout(authResponse.token);
     } catch (checkoutError) {
-      setError(
+      const message =
         checkoutError instanceof Error
           ? checkoutError.message
-          : "Google sign-in or checkout failed",
-      );
+          : "Google sign-in or checkout failed";
+      notify(message, "error");
+      setError(message);
       setIsSubmitting(false);
     }
   }
@@ -393,7 +404,10 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
                     </label>
                     <GoogleSignInButton
                       onCredential={handleGoogleCredential}
-                      onError={setError}
+                      onError={(message) => {
+                        notify(message, "error");
+                        setError(message);
+                      }}
                     />
                   </>
                 )}

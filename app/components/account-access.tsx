@@ -49,9 +49,10 @@ export function AccountAccess({
       })
       .catch((statusError) => {
         if (active) {
-          setSetupStatusError(
-            statusError instanceof Error ? statusError.message : "Could not check admin setup status",
-          );
+          const message =
+            statusError instanceof Error ? statusError.message : "Could not check admin setup status";
+          setSetupStatusError(message);
+          notify(message, "error");
         }
       })
       .finally(() => {
@@ -61,7 +62,7 @@ export function AccountAccess({
     return () => {
       active = false;
     };
-  }, [allowAdminSetup]);
+  }, [allowAdminSetup, notify]);
 
   function acceptAuth(response: AuthResponse) {
     saveAuth(response.token, response.user);
@@ -99,6 +100,7 @@ export function AccountAccess({
       acceptAuth(response);
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : "Could not sign in";
+      notify(message, "error");
       setError(
         mode === "login" && allowAdminSetup && message === "Email or password is incorrect"
           ? `${message}. Check ADMIN_EMAIL and ADMIN_PASSWORD in the backend .env file, then restart the API so it can sync the configured admin password.`
@@ -118,7 +120,9 @@ export function AccountAccess({
         body: JSON.stringify({ credential }),
       }));
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "Google sign-in failed");
+      const message = authError instanceof Error ? authError.message : "Google sign-in failed";
+      notify(message, "error");
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -249,7 +253,10 @@ export function AccountAccess({
             <div className="account-access-divider"><span>or continue with</span></div>
             <GoogleSignInButton
               onCredential={handleGoogleCredential}
-              onError={setError}
+              onError={(message) => {
+                notify(message, "error");
+                setError(message);
+              }}
             />
           </>
         )}

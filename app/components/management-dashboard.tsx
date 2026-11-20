@@ -8,6 +8,7 @@ import { AccountAccess } from "./account-access";
 import { SiteFooter, SiteHeader } from "./site-shell";
 import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
+import { useToast } from "./toast-provider";
 
 type ManagedEquipment = EquipmentListing & { status: "pending" | "approved" | "rejected" };
 type ManagedUser = AuthUser & { disabled?: boolean };
@@ -42,6 +43,7 @@ export function ManagementDashboard() {
   const [token, setToken] = useState("");
   const [isChecking, setIsChecking] = useState(true);
   const [error, setError] = useState("");
+  const { notify } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +64,10 @@ export function ManagementDashboard() {
         setUser(currentUser);
       } catch (sessionError) {
         if (!cancelled) {
-          setError(sessionError instanceof Error ? sessionError.message : "Could not verify your account");
+          const message =
+            sessionError instanceof Error ? sessionError.message : "Could not verify your account";
+          setError(message);
+          notify(message, "error");
         }
       } finally {
         if (!cancelled) setIsChecking(false);
@@ -73,7 +78,7 @@ export function ManagementDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, notify]);
 
   function handleAuthenticated(accessToken: string, currentUser: AuthUser) {
     if (currentUser.role === "customer") {
@@ -89,6 +94,7 @@ export function ManagementDashboard() {
     clearAuth();
     setToken("");
     setUser(null);
+    notify("You have been signed out.", "info");
   }
 
   return (
@@ -146,6 +152,7 @@ function OwnerManagement({ token }: { token: string }) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const { notify } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -170,7 +177,12 @@ function OwnerManagement({ token }: { token: string }) {
           ])));
         }
       } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Could not load owner dashboard");
+        if (!cancelled) {
+          const message =
+            loadError instanceof Error ? loadError.message : "Could not load owner dashboard";
+          setError(message);
+          notify(message, "error");
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -180,7 +192,7 @@ function OwnerManagement({ token }: { token: string }) {
     return () => {
       cancelled = true;
     };
-  }, [refreshKey, token]);
+  }, [refreshKey, token, notify]);
 
   async function createListing(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -210,8 +222,11 @@ function OwnerManagement({ token }: { token: string }) {
       });
       form.reset();
       setRefreshKey((key) => key + 1);
+      notify("Listing submitted. It will appear after admin approval.");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Could not create listing");
+      const message = saveError instanceof Error ? saveError.message : "Could not create listing";
+      notify(message, "error");
+      setError(message);
     } finally {
       setIsSaving(false);
     }
@@ -232,8 +247,11 @@ function OwnerManagement({ token }: { token: string }) {
         }),
       });
       setRefreshKey((key) => key + 1);
+      notify("Listing updated.");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Could not update listing");
+      const message = saveError instanceof Error ? saveError.message : "Could not update listing";
+      notify(message, "error");
+      setError(message);
     } finally {
       setIsSaving(false);
     }
@@ -249,8 +267,11 @@ function OwnerManagement({ token }: { token: string }) {
         headers: authHeaders(token),
       });
       setRefreshKey((key) => key + 1);
+      notify("Listing deleted.", "info");
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Could not delete listing");
+      const message = deleteError instanceof Error ? deleteError.message : "Could not delete listing";
+      notify(message, "error");
+      setError(message);
     } finally {
       setIsSaving(false);
     }
@@ -265,8 +286,11 @@ function OwnerManagement({ token }: { token: string }) {
         body: JSON.stringify({ bookingStatus }),
       });
       setRefreshKey((key) => key + 1);
+      notify(`Booking ${bookingStatus}.`);
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : "Could not update booking");
+      const message = updateError instanceof Error ? updateError.message : "Could not update booking";
+      notify(message, "error");
+      setError(message);
     }
   }
 
@@ -469,6 +493,7 @@ function AdminManagement({
   const [error, setError] = useState("");
   const [analyticsError, setAnalyticsError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const { notify } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -489,7 +514,12 @@ function AdminManagement({
           setUsers(usersResponse.items);
         }
       } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Could not load admin dashboard");
+        if (!cancelled) {
+          const message =
+            loadError instanceof Error ? loadError.message : "Could not load admin dashboard";
+          setError(message);
+          notify(message, "error");
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -505,9 +535,11 @@ function AdminManagement({
         if (!cancelled) setAnalytics(response);
       } catch (analyticsLoadError) {
         if (!cancelled) {
-          setAnalyticsError(analyticsLoadError instanceof Error
+          const message = analyticsLoadError instanceof Error
             ? analyticsLoadError.message
-            : "Could not load marketplace analytics");
+            : "Could not load marketplace analytics";
+          setAnalyticsError(message);
+          notify(message, "error");
         }
       } finally {
         if (!cancelled) setIsAnalyticsLoading(false);
@@ -519,7 +551,7 @@ function AdminManagement({
     return () => {
       cancelled = true;
     };
-  }, [refreshKey, token]);
+  }, [refreshKey, token, notify]);
 
   async function reviewListing(id: string, status: "approved" | "rejected") {
     setError("");
@@ -530,8 +562,11 @@ function AdminManagement({
         body: JSON.stringify({ status }),
       });
       setRefreshKey((key) => key + 1);
+      notify(`Listing ${status}.`);
     } catch (reviewError) {
-      setError(reviewError instanceof Error ? reviewError.message : "Could not review listing");
+      const message = reviewError instanceof Error ? reviewError.message : "Could not review listing";
+      notify(message, "error");
+      setError(message);
     }
   }
 
@@ -544,8 +579,11 @@ function AdminManagement({
         body: JSON.stringify({ role }),
       });
       setRefreshKey((key) => key + 1);
+      notify(`Role changed to ${role}.`);
     } catch (roleError) {
-      setError(roleError instanceof Error ? roleError.message : "Could not change user role");
+      const message = roleError instanceof Error ? roleError.message : "Could not change user role";
+      notify(message, "error");
+      setError(message);
     }
   }
 
@@ -558,8 +596,11 @@ function AdminManagement({
         body: JSON.stringify({ disabled: !user.disabled }),
       });
       setRefreshKey((key) => key + 1);
+      notify(user.disabled ? "Account enabled." : "Account disabled.", "info");
     } catch (statusError) {
-      setError(statusError instanceof Error ? statusError.message : "Could not update user status");
+      const message = statusError instanceof Error ? statusError.message : "Could not update user status";
+      notify(message, "error");
+      setError(message);
     }
   }
 
