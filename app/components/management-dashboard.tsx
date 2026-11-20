@@ -22,6 +22,12 @@ type OwnerBooking = {
   totalAmount: number;
   customer?: { name?: string; email?: string } | null;
 };
+type OwnerAnalytics = {
+  totalListedEquipment: number;
+  completedRentals: number;
+  totalEarnings: number;
+  monthlyEarnings: { month: string; earnings: number }[];
+};
 type AdminAnalytics = {
   totalUsers: number;
   totalEquipment: number;
@@ -37,7 +43,11 @@ function authHeaders(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
 
-export function ManagementDashboard() {
+export function ManagementDashboard({
+  expectedRole,
+}: {
+  expectedRole?: "owner" | "admin";
+}) {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState("");
@@ -60,6 +70,10 @@ export function ManagementDashboard() {
           router.replace("/account");
           return;
         }
+        if (expectedRole && currentUser.role !== expectedRole) {
+          router.replace(currentUser.role === "admin" ? "/admin/dashboard" : "/owner/dashboard");
+          return;
+        }
         setToken(storedToken);
         setUser(currentUser);
       } catch (sessionError) {
@@ -78,11 +92,15 @@ export function ManagementDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [router, notify]);
+  }, [router, notify, expectedRole]);
 
   function handleAuthenticated(accessToken: string, currentUser: AuthUser) {
     if (currentUser.role === "customer") {
       router.replace("/account");
+      return;
+    }
+    if (expectedRole && currentUser.role !== expectedRole) {
+      router.replace(currentUser.role === "admin" ? "/admin/dashboard" : "/owner/dashboard");
       return;
     }
     setError("");
@@ -151,6 +169,9 @@ function OwnerManagement({ token }: { token: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [analytics, setAnalytics] = useState<OwnerAnalytics | null>(null);
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const { notify } = useToast();
 
@@ -188,7 +209,29 @@ function OwnerManagement({ token }: { token: string }) {
       }
     }
 
+    async function loadOwnerAnalytics() {
+      setIsAnalyticsLoading(true);
+      setAnalyticsError("");
+      try {
+        const response = await apiRequest<OwnerAnalytics>("/analytics/owner", {
+          headers: authHeaders(token),
+        });
+        if (!cancelled) setAnalytics(response);
+      } catch (analyticsLoadError) {
+        if (!cancelled) {
+          const message = analyticsLoadError instanceof Error
+            ? analyticsLoadError.message
+            : "Could not load owner analytics";
+          setAnalyticsError(message);
+          notify(message, "error");
+        }
+      } finally {
+        if (!cancelled) setIsAnalyticsLoading(false);
+      }
+    }
+
     void loadOwnerData();
+    void loadOwnerAnalytics();
     return () => {
       cancelled = true;
     };
@@ -297,6 +340,46 @@ function OwnerManagement({ token }: { token: string }) {
   return (
     <div className="management-content">
       {error && <p className="booking-field-error" role="alert">{error}</p>}
+      <section className="management-section">
+        <div className="management-section-heading">
+          <div><p className="eyebrow">OWNER ANALYTICS</p><h2>Your performance</h2></div>
+        </div>
+        {isAnalyticsLoading ? (
+          <p role="status">Loading owner analytics...</p>
+        ) : analyticsError ? (
+          <p className="booking-field-error" role="alert">{analyticsError}</p>
+        ) : analytics ? (
+          <>
+            <div className="admin-metrics-grid">
+              <Card className="admin-metric-card">
+                <CardContent className="p-0">
+                  <p>Listed equipment</p>
+                  <strong>{new Intl.NumberFormat("en-BD").format(analytics.totalListedEquipment)}</strong>
+                </CardContent>
+              </Card>
+              <Card className="admin-metric-card">
+                <CardContent className="p-0">
+                  <p>Completed rentals</p>
+                  <strong>{new Intl.NumberFormat("en-BD").format(analytics.completedRentals)}</strong>
+                </CardContent>
+              </Card>
+              <Card className="admin-metric-card">
+                <CardContent className="p-0">
+                  <p>Paid earnings</p>
+                  <strong>{formatCurrency(analytics.totalEarnings)}</strong>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="admin-charts-grid">
+              <AdminMonthlyChart
+                title="earnings"
+                items={analytics.monthlyEarnings.map(({ month, earnings }) => ({ month, value: earnings }))}
+                isCurrency
+              />
+            </div>
+          </>
+        ) : null}
+      </section>
       <section className="management-section">
         <div className="management-section-heading">
           <div><p className="eyebrow">OWNER INVENTORY</p><h2>Your listings</h2></div>
