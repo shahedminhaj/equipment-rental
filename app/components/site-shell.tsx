@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AUTH_CHANGED_EVENT, clearAuth, type AuthUser } from "../lib/auth";
+import { useToast } from "./toast-provider";
 
 function BrandMark() {
   return (
@@ -33,6 +34,7 @@ function BrandMark() {
 
 export function SiteHeader() {
   const router = useRouter();
+  const { notify } = useToast();
   const [role, setRole] = useState<AuthUser["role"] | null>(null);
 
   useEffect(() => {
@@ -57,9 +59,14 @@ export function SiteHeader() {
   function signOut() {
     clearAuth();
     router.push("/");
+    notify("You have been signed out.", "info");
   }
 
-  const dashboardPath = role === "customer" ? "/account" : "/dashboard";
+  const dashboardPath = role === "customer"
+    ? "/account"
+    : role === "owner"
+      ? "/owner/dashboard"
+      : "/admin/dashboard";
   const roleLabel = role === "admin" ? "Admin" : role === "owner" ? "Owner" : "User";
 
   return (
@@ -90,7 +97,7 @@ export function SiteHeader() {
             <div className="nav-session">
               <Badge variant="secondary">{roleLabel}</Badge>
               <Link className="nav-session-link" href={dashboardPath}>
-                {role === "admin" ? "Admin dashboard" : role === "owner" ? "My listings" : "My account"}
+                {role === "admin" ? "Admin dashboard" : role === "owner" ? "Owner dashboard" : "My account"}
               </Link>
               <Button type="button" variant="ghost" size="sm" onClick={signOut}>
                 Sign out
