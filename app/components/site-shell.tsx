@@ -73,12 +73,18 @@ export function SiteHeader() {
         <div className="nav-shell">
           <BrandMark />
           <nav className="main-nav" aria-label="Main navigation">
-            <Link href="/equipment">Find equipment</Link>
+            <Link href="/">Home</Link>
+            <Link href="/equipment">All equipment</Link>
             <Link href="/#categories">Categories</Link>
             <Link href="/#how-it-works">How it works</Link>
             <Link href="/#reviews">Our community</Link>
-            {role !== "admin" && <Link href="/account">My bookings</Link>}
-            {!role && <Link href="/signup">Sign up</Link>}
+            {role === "customer" && <Link href="/account">My rentals</Link>}
+            {!role && (
+              <>
+                <Link href="/login">Login</Link>
+                <Link href="/signup">Register</Link>
+              </>
+            )}
           </nav>
           {role ? (
             <div className="nav-session">
