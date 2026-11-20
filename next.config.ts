@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   typescript: {
     tsconfigPath: isProd ? "tsconfig.build.json" : "tsconfig.json",
   },
+  distDir: isProd ? ".next-build" : ".next",
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

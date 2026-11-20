@@ -115,6 +115,20 @@ export function ManagementDashboard({
     notify("You have been signed out.", "info");
   }
 
+  const segments = user?.role === "admin"
+    ? [
+        { href: "#admin-analytics", label: "Analytics", hint: "Marketplace metrics" },
+        { href: "#admin-review", label: "Review queue", hint: "Pending listings" },
+        { href: "#admin-users", label: "Users", hint: "Roles and access" },
+      ]
+    : user?.role === "owner"
+      ? [
+          { href: "#owner-analytics", label: "Analytics", hint: "Earnings overview" },
+          { href: "#owner-inventory", label: "Inventory", hint: "Your listings" },
+          { href: "#owner-bookings", label: "Bookings", hint: "Paid requests" },
+        ]
+      : [];
+
   return (
     <>
       <SiteHeader />
@@ -129,6 +143,20 @@ export function ManagementDashboard({
           </div>
           {user && <button className="booking-cancel" type="button" onClick={signOut}>Sign out</button>}
         </div>
+
+        {segments.length > 0 ? (
+          <nav className="management-segments" aria-label="Dashboard sections">
+            {segments.map((segment, index) => (
+              <a className="management-segment" href={segment.href} key={segment.href}>
+                <span className="management-segment-index">{String(index + 1).padStart(2, "0")}</span>
+                <span>
+                  <strong>{segment.label}</strong>
+                  <small>{segment.hint}</small>
+                </span>
+              </a>
+            ))}
+          </nav>
+        ) : null}
 
         {isChecking ? (
           <p role="status">Checking your account...</p>
@@ -340,7 +368,7 @@ function OwnerManagement({ token }: { token: string }) {
   return (
     <div className="management-content">
       {error && <p className="booking-field-error" role="alert">{error}</p>}
-      <section className="management-section">
+      <section className="management-section" id="owner-analytics">
         <div className="management-section-heading">
           <div><p className="eyebrow">OWNER ANALYTICS</p><h2>Your performance</h2></div>
         </div>
@@ -380,7 +408,7 @@ function OwnerManagement({ token }: { token: string }) {
           </>
         ) : null}
       </section>
-      <section className="management-section">
+      <section className="management-section" id="owner-inventory">
         <div className="management-section-heading">
           <div><p className="eyebrow">OWNER INVENTORY</p><h2>Your listings</h2></div>
         </div>
@@ -434,7 +462,7 @@ function OwnerManagement({ token }: { token: string }) {
         )}
       </section>
 
-      <section className="management-section">
+      <section className="management-section" id="owner-bookings">
         <div className="management-section-heading">
           <div><p className="eyebrow">RENTAL REQUESTS</p><h2>Paid bookings</h2></div>
         </div>
@@ -692,7 +720,7 @@ function AdminManagement({
       {error && <p className="booking-field-error" role="alert">{error}</p>}
       {isLoading ? <p role="status">Loading admin data...</p> : (
         <>
-          <section className="management-section">
+          <section className="management-section" id="admin-analytics">
             <div className="management-section-heading">
               <div><p className="eyebrow">PLATFORM OVERVIEW</p><h2>Marketplace analytics</h2></div>
             </div>
@@ -703,7 +731,7 @@ function AdminManagement({
             />
           </section>
 
-          <section className="management-section">
+          <section className="management-section" id="admin-review">
             <div className="management-section-heading">
               <div><p className="eyebrow">LISTING REVIEW</p><h2>Pending equipment ({equipment.length})</h2></div>
             </div>
@@ -726,7 +754,7 @@ function AdminManagement({
             )}
           </section>
 
-          <section className="management-section">
+          <section className="management-section" id="admin-users">
             <div className="management-section-heading">
               <div><p className="eyebrow">ACCOUNT ACCESS</p><h2>Users ({users.length})</h2></div>
             </div>

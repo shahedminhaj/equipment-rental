@@ -128,9 +128,67 @@ export function AccountAccess({
     }
   }
 
+  function changeMode(next: "login" | "register" | "admin-setup") {
+    setMode(next);
+    setError("");
+  }
+
   return (
-    <Card className="account-access-card gap-0">
+    <div className="auth-shell">
+      <aside className="auth-aside">
+        <div className="auth-aside-brand">
+          <svg viewBox="0 0 36 36" fill="none" aria-hidden="true">
+            <path d="M7 25.5 18 7l11 18.5H7Z" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" />
+            <path d="M12 25.5 18 15l6 10.5M18 7v5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+          </svg>
+          fieldkit.
+        </div>
+        <h2>Good gear. Better projects.</h2>
+        <p>One account for finding gear, saving favorites, and tracking every rental from start to finish.</p>
+        <div className="auth-steps">
+          <div className="auth-step">
+            <span className="auth-step-index">01</span>
+            <div><strong>Find the right equipment</strong><small>Search live listings near you</small></div>
+          </div>
+          <div className="auth-step">
+            <span className="auth-step-index">02</span>
+            <div><strong>Book with confidence</strong><small>Secure Stripe checkout and confirmation</small></div>
+          </div>
+          <div className="auth-step">
+            <span className="auth-step-index">03</span>
+            <div><strong>Manage everything</strong><small>Rentals, favorites, and profile in one place</small></div>
+          </div>
+        </div>
+      </aside>
+      <Card className="auth-card gap-0">
       <CardHeader className="p-0">
+        <div className="auth-segment" role="tablist" aria-label="Account mode">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "login"}
+            data-active={mode === "login"}
+            onClick={() => changeMode("login")}
+          >
+            Sign in
+          </button>
+          {allowRegistration ? (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "register"}
+              data-active={mode === "register"}
+              onClick={() => changeMode("register")}
+            >
+              Create account
+            </button>
+          ) : null}
+          {allowAdminSetup && mode === "admin-setup" ? (
+            <button type="button" role="tab" aria-selected data-active="true">
+              Admin setup
+            </button>
+          ) : null}
+        </div>
         <p className="eyebrow">{mode === "admin-setup" ? "ONE-TIME ADMIN SETUP" : "FIELDKIT ACCOUNT"}</p>
         <h1>
           {mode === "admin-setup"
@@ -213,10 +271,7 @@ export function AccountAccess({
             {mode === "login" ? "New to Fieldkit?" : "Already have an account?"}{" "}
             <button
               type="button"
-              onClick={() => {
-                setMode(mode === "login" ? "register" : "login");
-                setError("");
-              }}
+              onClick={() => changeMode(mode === "login" ? "register" : "login")}
             >
               {mode === "login" ? "Create an account" : "Sign in"}
             </button>
@@ -233,10 +288,7 @@ export function AccountAccess({
                   type="button"
                   variant="link"
                   className="admin-setup-link"
-                  onClick={() => {
-                    setMode("admin-setup");
-                    setError("");
-                  }}
+                  onClick={() => changeMode("admin-setup")}
                 >
                   Set up the first admin
                 </Button>
@@ -261,6 +313,7 @@ export function AccountAccess({
           </>
         )}
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }

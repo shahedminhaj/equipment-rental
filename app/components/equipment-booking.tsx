@@ -246,6 +246,12 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
               </button>
             </div>
 
+            <div className="booking-step-bar" aria-label="Booking steps">
+              <span data-active="true">01 · Rental</span>
+              <span>02 · Details</span>
+              <span>03 · Payment</span>
+            </div>
+
             <form className="booking-form" onSubmit={handleCheckout}>
               <div className="booking-date-fields">
                 <label>
