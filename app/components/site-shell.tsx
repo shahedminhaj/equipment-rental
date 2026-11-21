@@ -86,12 +86,6 @@ export function SiteHeader() {
             <Link href="/#how-it-works">How it works</Link>
             <Link href="/#reviews">Our community</Link>
             {role === "customer" && <Link href="/account">My rentals</Link>}
-            {!role && (
-              <>
-                <Link href="/login">Login</Link>
-                <Link href="/signup">Register</Link>
-              </>
-            )}
           </nav>
           {role ? (
             <div className="nav-session">
@@ -104,9 +98,12 @@ export function SiteHeader() {
               </Button>
             </div>
           ) : (
-            <Link className="button button-dark nav-cta" href="/get-started">
-              Get started <span aria-hidden="true">↗</span>
-            </Link>
+            <div className="nav-auth-actions">
+              <Link className="nav-auth-link" href="/signup">Create account</Link>
+              <Link className="button button-dark nav-cta" href="/login">
+                Sign in <span aria-hidden="true">↗</span>
+              </Link>
+            </div>
           )}
         </div>
       </header>
@@ -133,7 +130,7 @@ export function SiteFooter() {
           <Link href="/#why-fieldkit">Our story</Link>
           <Link href="/#reviews">Community</Link>
           <Link href="/account">My bookings</Link>
-          <Link href="/signup">Sign up</Link>
+          <Link href="/signup">Create account</Link>
           <Link href="/#top">Back to top ↑</Link>
         </div>
         <div className="footer-note">

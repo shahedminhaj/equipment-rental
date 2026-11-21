@@ -270,6 +270,23 @@ a {
   font-size: 11px;
 }
 
+.nav-auth-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.nav-auth-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.nav-auth-link:hover {
+  color: var(--ink);
+}
+
 .hero {
   display: grid;
   min-height: 604px;

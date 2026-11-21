@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "../lib/api";
 import { saveAuth, type AuthUser } from "../lib/auth";
 import { useToast } from "./toast-provider";
@@ -28,31 +30,32 @@ export function AccountAccess({
   allowGoogle?: boolean;
   allowAdminSetup?: boolean;
 }) {
-  const [mode, setMode] = useState<"login" | "register" | "admin-setup">(initialMode);
+  const [accountType, setAccountType] = useState<"user" | "admin">("user");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [adminSetupAvailable, setAdminSetupAvailable] = useState(false);
-  const [isCheckingSetup, setIsCheckingSetup] = useState(allowAdminSetup);
+  const [adminSetupStatus, setAdminSetupStatus] = useState<AdminSetupStatus | null>(null);
+  const [isCheckingSetup, setIsCheckingSetup] = useState(true);
   const [setupStatusError, setSetupStatusError] = useState("");
   const { notify } = useToast();
 
+  const isSignup = initialMode === "register";
+  const adminSetupAvailable = adminSetupStatus?.configured === true && adminSetupStatus.available;
+
   useEffect(() => {
-    if (!allowAdminSetup) return;
     let active = true;
 
     apiRequest<AdminSetupStatus>("/auth/admin/setup-status")
       .then((status) => {
-        if (active) setAdminSetupAvailable(status.configured && status.available);
+        if (active) setAdminSetupStatus(status);
       })
       .catch((statusError) => {
         if (active) {
           const message =
             statusError instanceof Error ? statusError.message : "Could not check admin setup status";
           setSetupStatusError(message);
-          notify(message, "error");
         }
       })
       .finally(() => {
@@ -62,50 +65,102 @@ export function AccountAccess({
     return () => {
       active = false;
     };
-  }, [allowAdminSetup, notify]);
+  }, []);
 
-  function acceptAuth(response: AuthResponse) {
+  function resetFormState() {
+    setName("");
+    setEmail("");
+    setPassword("");
+    setError("");
+  }
+
+  function acceptAuth(response: AuthResponse, kind: "login" | "register" | "admin-setup") {
     saveAuth(response.token, response.user);
     notify(
-      mode === "register"
+      kind === "register"
         ? "Account created. Welcome to Fieldkit!"
-        : mode === "admin-setup"
+        : kind === "admin-setup"
           ? "Administrator account created."
           : `Welcome back, ${response.user.name.split(" ")[0]}!`,
     );
     onAuthenticated(response.token, response.user);
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleUserLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
     setError("");
     try {
-      const endpoint = mode === "register"
-        ? "/auth/register"
-        : mode === "admin-setup"
-          ? "/auth/admin/setup"
-          : "/auth/login";
-      const response = await apiRequest<AuthResponse>(
-        endpoint,
-        {
-          method: "POST",
-          body: JSON.stringify(
-            mode === "register"
-              ? { name: name.trim(), email: email.trim(), password }
-              : { email: email.trim(), password },
-          ),
-        },
-      );
-      acceptAuth(response);
+      const response = await apiRequest<AuthResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      acceptAuth(response, "login");
+    } catch (authError) {
+      const message = authError instanceof Error ? authError.message : "Could not sign in";
+      notify(message, "error");
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleAdminLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+    try {
+      const response = await apiRequest<AuthResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      acceptAuth(response, "login");
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : "Could not sign in";
       notify(message, "error");
       setError(
-        mode === "login" && allowAdminSetup && message === "Email or password is incorrect"
+        allowAdminSetup && message === "Email or password is incorrect"
           ? `${message}. Check ADMIN_EMAIL and ADMIN_PASSWORD in the backend .env file, then restart the API so it can sync the configured admin password.`
           : message,
       );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleUserRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+    try {
+      const response = await apiRequest<AuthResponse>("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
+      });
+      acceptAuth(response, "register");
+    } catch (authError) {
+      const message = authError instanceof Error ? authError.message : "Could not create account";
+      notify(message, "error");
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleAdminSetup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+    try {
+      const response = await apiRequest<AuthResponse>("/auth/admin/setup", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      acceptAuth(response, "admin-setup");
+    } catch (authError) {
+      const message = authError instanceof Error ? authError.message : "Could not create administrator";
+      notify(message, "error");
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -115,10 +170,13 @@ export function AccountAccess({
     setIsSubmitting(true);
     setError("");
     try {
-      acceptAuth(await apiRequest<AuthResponse>("/auth/google", {
-        method: "POST",
-        body: JSON.stringify({ credential }),
-      }));
+      acceptAuth(
+        await apiRequest<AuthResponse>("/auth/google", {
+          method: "POST",
+          body: JSON.stringify({ credential }),
+        }),
+        isSignup ? "register" : "login",
+      );
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : "Google sign-in failed";
       notify(message, "error");
@@ -128,10 +186,15 @@ export function AccountAccess({
     }
   }
 
-  function changeMode(next: "login" | "register" | "admin-setup") {
-    setMode(next);
-    setError("");
-  }
+  const title = isSignup
+    ? accountType === "admin"
+      ? "Create admin account"
+      : "Create your account"
+    : accountType === "admin"
+      ? "Admin sign in"
+      : "Sign in to continue";
+
+  const eyebrow = isSignup ? "CREATE ACCOUNT" : "SIGN IN";
 
   return (
     <div className="auth-shell">
@@ -161,158 +224,221 @@ export function AccountAccess({
         </div>
       </aside>
       <Card className="auth-card gap-0">
-      <CardHeader className="p-0">
-        <div className="auth-segment" role="tablist" aria-label="Account mode">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "login"}
-            data-active={mode === "login"}
-            onClick={() => changeMode("login")}
+        <CardHeader className="space-y-4 p-0">
+          <p className="eyebrow">{eyebrow}</p>
+          <h1>{title}</h1>
+          <Tabs
+            value={accountType}
+            onValueChange={(value) => {
+              if (value === "user" || value === "admin") {
+                setAccountType(value);
+                resetFormState();
+              }
+            }}
+            className="w-full"
           >
-            Sign in
-          </button>
-          {allowRegistration ? (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "register"}
-              data-active={mode === "register"}
-              onClick={() => changeMode("register")}
-            >
-              Create account
-            </button>
-          ) : null}
-          {allowAdminSetup && mode === "admin-setup" ? (
-            <button type="button" role="tab" aria-selected data-active="true">
-              Admin setup
-            </button>
-          ) : null}
-        </div>
-        <p className="eyebrow">{mode === "admin-setup" ? "ONE-TIME ADMIN SETUP" : "FIELDKIT ACCOUNT"}</p>
-        <h1>
-          {mode === "admin-setup"
-            ? "Create the first administrator"
-            : mode === "register"
-              ? "Create your account"
-              : "Sign in to continue"}
-        </h1>
-        {mode === "admin-setup" && (
-          <p className="account-form-hint">
-            Enter the exact email and password configured as ADMIN_EMAIL and ADMIN_PASSWORD in the backend environment.
-          </p>
-        )}
-        {mode === "admin-setup" && <Badge variant="outline">One-time setup</Badge>}
-      </CardHeader>
-      <CardContent className="p-0">
-        <form className="account-access-form" onSubmit={handleSubmit}>
-          {mode === "register" && (
-            <div className="account-form-field">
-              <Label htmlFor="account-name">Name</Label>
-              <Input
-                id="account-name"
-                type="text"
-                autoComplete="name"
-                minLength={2}
-                maxLength={100}
-                required
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </div>
-          )}
-          <div className="account-form-field">
-            <Label htmlFor="account-email">Email</Label>
-            <Input
-              id="account-email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </div>
-          <div className="account-form-field">
-            <Label htmlFor="account-password">Password</Label>
-            <Input
-              id="account-password"
-              type="password"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              minLength={6}
-              pattern={mode === "register" ? "(?=.*[a-z])(?=.*[A-Z]).{6,}" : undefined}
-              title="Use at least 6 characters, including uppercase and lowercase letters."
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </div>
-          {mode === "register" && (
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="user">User</TabsTrigger>
+              <TabsTrigger value="admin">Admin</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {accountType === "admin" && (
             <p className="account-form-hint">
-              Use at least 6 characters with uppercase and lowercase letters.
+              {isSignup
+                ? "Admin access is provisioned from the backend configuration. If first-admin setup is available, you can create it here."
+                : "Sign in with your administrator credentials."}
             </p>
           )}
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <Button className="button button-dark w-full" type="submit" disabled={isSubmitting}>
-            {isSubmitting
-              ? "Please wait..."
-              : mode === "admin-setup"
-                ? "Create administrator and continue"
-                : mode === "login"
-                  ? "Sign in"
-                  : "Create account"}
-          </Button>
-        </form>
-        {allowRegistration && (
-          <p className="account-access-switch">
-            {mode === "login" ? "New to Fieldkit?" : "Already have an account?"}{" "}
-            <button
-              type="button"
-              onClick={() => changeMode(mode === "login" ? "register" : "login")}
-            >
-              {mode === "login" ? "Create an account" : "Sign in"}
-            </button>
-          </p>
-        )}
-        {allowAdminSetup && mode === "login" && (
-          <div className="admin-setup-prompt">
-            {isCheckingSetup ? (
-              <p role="status">Checking first-admin setup...</p>
-            ) : adminSetupAvailable ? (
-              <p>
-                No admin account exists yet.{" "}
-                <Button
-                  type="button"
-                  variant="link"
-                  className="admin-setup-link"
-                  onClick={() => changeMode("admin-setup")}
-                >
-                  Set up the first admin
-                </Button>
+        </CardHeader>
+        <CardContent className="space-y-4 p-0 pt-4">
+          {isSignup && accountType === "user" && (
+            <form className="account-access-form" onSubmit={handleUserRegister}>
+              <div className="account-form-field">
+                <Label htmlFor="signup-name">Name</Label>
+                <Input
+                  id="signup-name"
+                  type="text"
+                  autoComplete="name"
+                  minLength={2}
+                  maxLength={100}
+                  required
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+              <div className="account-form-field">
+                <Label htmlFor="signup-email">Email</Label>
+                <Input
+                  id="signup-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </div>
+              <div className="account-form-field">
+                <Label htmlFor="signup-password">Password</Label>
+                <Input
+                  id="signup-password"
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={6}
+                  pattern="(?=.*[a-z])(?=.*[A-Z]).{6,}"
+                  title="Use at least 6 characters, including uppercase and lowercase letters."
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </div>
+              <p className="account-form-hint">
+                Use at least 6 characters with uppercase and lowercase letters.
               </p>
-            ) : setupStatusError ? (
-              <Alert variant="destructive">
-                <AlertDescription>Could not check first-admin setup: {setupStatusError}</AlertDescription>
-              </Alert>
-            ) : null}
-          </div>
-        )}
-        {allowGoogle && mode !== "admin-setup" && (
-          <>
-            <div className="account-access-divider"><span>or continue with</span></div>
-            <GoogleSignInButton
-              onCredential={handleGoogleCredential}
-              onError={(message) => {
-                notify(message, "error");
-                setError(message);
-              }}
-            />
-          </>
-        )}
-      </CardContent>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <Button className="button button-dark w-full" type="submit" disabled={isSubmitting || !allowRegistration}>
+                {isSubmitting ? "Please wait..." : "Create account"}
+              </Button>
+            </form>
+          )}
+
+          {isSignup && accountType === "admin" && (
+            <>
+              {isCheckingSetup ? (
+                <p className="account-form-hint" role="status">Checking admin setup status...</p>
+              ) : adminSetupAvailable ? (
+                <form className="account-access-form" onSubmit={handleAdminSetup}>
+                  <Badge variant="outline" className="w-fit">One-time setup</Badge>
+                  <p className="account-form-hint">
+                    Enter the exact email and password configured as <code>ADMIN_EMAIL</code> and <code>ADMIN_PASSWORD</code> in the backend environment.
+                  </p>
+                  <div className="account-form-field">
+                    <Label htmlFor="admin-setup-email">Admin email</Label>
+                    <Input
+                      id="admin-setup-email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </div>
+                  <div className="account-form-field">
+                    <Label htmlFor="admin-setup-password">Admin password</Label>
+                    <Input
+                      id="admin-setup-password"
+                      type="password"
+                      autoComplete="new-password"
+                      required
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                  </div>
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button className="button button-dark w-full" type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Please wait..." : "Create administrator account"}
+                  </Button>
+                </form>
+              ) : (
+                <div className="space-y-3">
+                  {adminSetupStatus?.configured && !adminSetupStatus.available ? (
+                    <Alert>
+                      <AlertDescription>
+                        An administrator account already exists. Please sign in as admin instead.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Alert>
+                      <AlertDescription>
+                        Admin accounts are managed by the backend configuration. If you need first-time admin setup, configure <code>ADMIN_EMAIL</code> and <code>ADMIN_PASSWORD</code> in the backend environment.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {setupStatusError && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{setupStatusError}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Link
+                    href="/login"
+                    className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Go to admin sign in
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+
+          {!isSignup && (
+            <form
+              className="account-access-form"
+              onSubmit={accountType === "admin" ? handleAdminLogin : handleUserLogin}
+            >
+              <div className="account-form-field">
+                <Label htmlFor="login-email">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </div>
+              <div className="account-form-field">
+                <Label htmlFor="login-password">Password</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </div>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <Button className="button button-dark w-full" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Please wait..." : accountType === "admin" ? "Sign in as admin" : "Sign in"}
+              </Button>
+            </form>
+          )}
+
+          {allowGoogle && accountType === "user" && (
+            <>
+              <div className="account-access-divider"><span>or continue with</span></div>
+              <GoogleSignInButton
+                onCredential={handleGoogleCredential}
+                onError={(message) => {
+                  notify(message, "error");
+                  setError(message);
+                }}
+              />
+            </>
+          )}
+
+          {!isSignup && (
+            <p className="account-access-switch">
+              Don&apos;t have an account? <Link href="/signup">Create account</Link>
+            </p>
+          )}
+          {isSignup && (
+            <p className="account-access-switch">
+              Already have an account? <Link href="/login">Sign in</Link>
+            </p>
+          )}
+        </CardContent>
       </Card>
     </div>
   );

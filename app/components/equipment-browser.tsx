@@ -294,8 +294,8 @@ export function EquipmentBrowser() {
                     : "No equipment has been approved yet. An equipment owner needs to submit a listing, then an administrator can approve it for the marketplace."}
                 </p>
                 {!hasActiveFilters && (
-                  <Link className="button button-dark catalog-owner-link" href="/get-started">
-                    Learn how to list equipment <span aria-hidden="true">→</span>
+                  <Link className="button button-dark catalog-owner-link" href="/signup">
+                    Create account to list equipment <span aria-hidden="true">→</span>
                   </Link>
                 )}
                 {hasActiveFilters && (

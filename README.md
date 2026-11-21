@@ -72,7 +72,7 @@ approved listings when the equipment collection is empty.
 | `/` | Home, live featured equipment, categories, and community |
 | `/equipment` | Searchable and filterable catalog |
 | `/equipment/:id` | Listing details, favorites, and booking |
-| `/login`, `/signup`, `/get-started` | Auth entry points |
+| `/login`, `/signup` | Sign in and create account (User/Admin options) |
 | `/account` | Customer dashboard |
 | `/account/rentals` | Rental history |
 | `/account/favorites` | Saved equipment |

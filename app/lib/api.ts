@@ -33,7 +33,17 @@ export async function apiRequest<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${apiBaseUrl}${path}`, { ...init, headers });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, { ...init, headers });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        "Could not connect to the server. Please check that the backend is running and NEXT_PUBLIC_API_URL is correct.",
+      );
+    }
+    throw error;
+  }
   if (response.status === 204) return undefined as T;
 
   let payload: unknown;
