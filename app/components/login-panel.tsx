@@ -15,19 +15,28 @@ export function LoginPanel() {
           initialMode="login"
           onAuthenticated={(_token, user) => {
             const next = new URLSearchParams(window.location.search).get("next");
-            if (next?.startsWith("/") && !next.startsWith("//")) {
-              router.push(next);
+            const isSafeNext =
+              typeof next === "string" &&
+              next.startsWith("/") &&
+              !next.startsWith("//") &&
+              next !== "/" &&
+              !next.startsWith("/login") &&
+              !next.startsWith("/signup") &&
+              !next.startsWith("/get-started");
+
+            if (isSafeNext) {
+              router.replace(next);
               return;
             }
             if (user.role === "admin") {
-              router.push("/admin/dashboard");
+              router.replace("/admin/dashboard");
               return;
             }
             if (user.role === "owner") {
-              router.push("/owner/dashboard");
+              router.replace("/owner/dashboard");
               return;
             }
-            router.push("/account");
+            router.replace("/account");
           }}
         />
       </main>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ManagementDashboard } from "../../components/management-dashboard";
+import { AdminDashboard } from "../../components/admin-dashboard";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard | Fieldkit",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminDashboardPage() {
-  return <ManagementDashboard expectedRole="admin" />;
+  return <AdminDashboard />;
 }

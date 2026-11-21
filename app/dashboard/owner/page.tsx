@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ManagementDashboard } from "../../components/management-dashboard";
+import { DashboardRedirect } from "../../components/dashboard-redirect";
 
 export const metadata: Metadata = {
   title: "Owner Dashboard | Fieldkit",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function DashboardOwnerPage() {
-  return <ManagementDashboard expectedRole="owner" />;
+  return <DashboardRedirect role="owner" />;
 }

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiRequest, formatCurrency, type EquipmentListing } from "../lib/api";
 import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
+import { dashboardHref } from "../lib/dashboard-routes";
 import { GoogleSignInButton } from "./google-sign-in";
 import { useToast } from "./toast-provider";
 
@@ -125,7 +126,7 @@ export function AccountDashboard({
         if (cancelled) return;
         saveAuth(savedToken, account.user);
         if (account.user.role !== "customer") {
-          router.replace("/dashboard");
+          router.replace(dashboardHref(account.user.role));
           return;
         }
         setProfile(account.user);
@@ -173,7 +174,7 @@ export function AccountDashboard({
       );
       saveAuth(response.token, response.user);
       if (response.user.role !== "customer") {
-        router.replace("/dashboard");
+        router.replace(dashboardHref(response.user.role));
         return;
       }
       setToken(response.token);
@@ -213,7 +214,7 @@ export function AccountDashboard({
       });
       saveAuth(response.token, response.user);
       if (response.user.role !== "customer") {
-        router.replace("/dashboard");
+        router.replace(dashboardHref(response.user.role));
         return;
       }
       setToken(response.token);
@@ -247,7 +248,7 @@ export function AccountDashboard({
     try {
       const account = await loadAccountData(token);
       if (account.user.role !== "customer") {
-        router.replace("/dashboard");
+        router.replace(dashboardHref(account.user.role));
         return;
       }
       setProfile(account.user);

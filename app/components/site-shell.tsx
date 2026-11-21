@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AUTH_CHANGED_EVENT, clearAuth, type AuthUser } from "../lib/auth";
+import { dashboardHref } from "../lib/dashboard-routes";
 import { useToast } from "./toast-provider";
 
 function BrandMark() {
@@ -62,11 +63,7 @@ export function SiteHeader() {
     notify("You have been signed out.", "info");
   }
 
-  const dashboardPath = role === "customer"
-    ? "/account"
-    : role === "owner"
-      ? "/owner/dashboard"
-      : "/admin/dashboard";
+  const dashboardPath = dashboardHref(role);
   const roleLabel = role === "admin" ? "Admin" : role === "owner" ? "Owner" : "User";
 
   return (
@@ -91,7 +88,7 @@ export function SiteHeader() {
             <div className="nav-session">
               <Badge variant="secondary">{roleLabel}</Badge>
               <Link className="nav-session-link" href={dashboardPath}>
-                {role === "admin" ? "Admin dashboard" : role === "owner" ? "Owner dashboard" : "My account"}
+                {role === "admin" ? "Admin dashboard" : role === "owner" ? "Owner dashboard" : "My dashboard"}
               </Link>
               <Button type="button" variant="ghost" size="sm" onClick={signOut}>
                 Sign out

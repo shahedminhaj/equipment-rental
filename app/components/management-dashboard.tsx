@@ -8,6 +8,7 @@ import { AccountAccess } from "./account-access";
 import { SiteFooter, SiteHeader } from "./site-shell";
 import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
+import { dashboardHref } from "../lib/dashboard-routes";
 import { useToast } from "./toast-provider";
 
 type ManagedEquipment = EquipmentListing & { status: "pending" | "approved" | "rejected" };
@@ -67,11 +68,11 @@ export function ManagementDashboard({
         if (cancelled) return;
         saveAuth(storedToken, currentUser);
         if (currentUser.role === "customer") {
-          router.replace("/account");
+          router.replace(dashboardHref(currentUser.role));
           return;
         }
         if (expectedRole && currentUser.role !== expectedRole) {
-          router.replace(currentUser.role === "admin" ? "/admin/dashboard" : "/owner/dashboard");
+          router.replace(dashboardHref(currentUser.role));
           return;
         }
         setToken(storedToken);
@@ -96,11 +97,11 @@ export function ManagementDashboard({
 
   function handleAuthenticated(accessToken: string, currentUser: AuthUser) {
     if (currentUser.role === "customer") {
-      router.replace("/account");
+      router.replace(dashboardHref(currentUser.role));
       return;
     }
     if (expectedRole && currentUser.role !== expectedRole) {
-      router.replace(currentUser.role === "admin" ? "/admin/dashboard" : "/owner/dashboard");
+      router.replace(dashboardHref(currentUser.role));
       return;
     }
     setError("");
