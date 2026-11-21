@@ -72,7 +72,13 @@ export function GoogleSignInButton({
   }, [scriptReady]);
 
   if (!clientId) {
-    return <p className="google-signin-note">Google sign-in needs NEXT_PUBLIC_GOOGLE_CLIENT_ID.</p>;
+    return (
+      <div className="w-full rounded-xl border border-amber-200/80 bg-amber-50/80 px-3 py-2.5 text-center">
+        <p className="text-[11px] leading-5 text-amber-800">
+          Google sign-in needs <code className="font-mono font-semibold">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code>.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -82,7 +88,7 @@ export function GoogleSignInButton({
         strategy="afterInteractive"
         onReady={() => setScriptReady(true)}
       />
-      <div className="google-signin-button" ref={buttonRef} />
+      <div className="google-signin-mount flex min-h-10 w-full min-w-0 items-center justify-center" ref={buttonRef} />
     </>
   );
 }

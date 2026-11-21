@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { ArrowUpRight, CalendarDays, ShieldCheck, TriangleAlert, X } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { appSurfaces, publicTone } from "../data/app-theme";
 import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 import { GoogleSignInButton } from "./google-sign-in";
 import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
@@ -32,6 +42,25 @@ function rentalUnits(start: string, end: string, rentalType: string) {
   if (rentalType === "Monthly") return Math.ceil(days / 30);
   return days;
 }
+
+function FieldError({ children }: { children: ReactNode }) {
+  return (
+    <Alert
+      variant="destructive"
+      className="rounded-xl border-rose-100 bg-rose-50/70 px-3 py-2 text-rose-900"
+    >
+      <TriangleAlert className="size-4" aria-hidden="true" />
+      <AlertDescription className="text-xs leading-relaxed text-rose-900">
+        {children}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+const fieldClass =
+  "h-10 rounded-xl border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-violet-400 focus-visible:ring-2 focus-visible:ring-violet-100";
+
+const bookingSteps = ["01 · Rental", "02 · Details", "03 · Payment"];
 
 export function EquipmentBooking({ item }: { item: EquipmentListing }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -200,90 +229,140 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
 
   return (
     <>
-      <button
-        className="button button-dark booking-open-button"
+      <Button
+        className={cn(
+          "h-11 w-full justify-between rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20",
+          "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+          publicTone.gradient,
+        )}
         type="button"
         disabled={!item.availableQuantity}
         onClick={openModal}
       >
         {item.availableQuantity ? "Book and pay securely" : "Currently unavailable"}
-        {item.availableQuantity > 0 && <span aria-hidden="true">↗</span>}
-      </button>
-      <p className="booking-card-note">
+        {item.availableQuantity > 0 && <ArrowUpRight className="size-4" aria-hidden="true" />}
+      </Button>
+      <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
         Sign in or create an account to reserve this equipment and continue to
         Stripe Checkout.
       </p>
 
       {isOpen && (
-        <div className="booking-overlay">
+        <div className="fixed inset-0 z-50 grid place-items-center p-4">
           <button
-            className="booking-backdrop"
+            className="absolute inset-0 cursor-default bg-slate-950/70 backdrop-blur-sm"
             type="button"
             aria-label="Close booking form"
             disabled={isSubmitting}
             onClick={closeModal}
           />
-          <section
-            className="booking-dialog"
+          <Card
+            className={cn(
+              appSurfaces.card,
+              "relative z-10 max-h-[90vh] w-full max-w-lg gap-0 overflow-y-auto py-0 shadow-2xl shadow-slate-950/25",
+            )}
             role="dialog"
             aria-modal="true"
             aria-labelledby="booking-title"
           >
-            <div className="booking-dialog-heading">
-              <div>
-                <p className="eyebrow">SECURE RENTAL CHECKOUT</p>
-                <h2 id="booking-title">Plan your rental.</h2>
-                <p>{item.name} · {formatCurrency(item.price)} / {rentalPeriod(item.rentalType)}</p>
+            <div aria-hidden="true" className={cn("h-1 w-full bg-linear-to-r", publicTone.gradient)} />
+
+            <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
+              <div className="flex items-start gap-3">
+                <span
+                  className={cn(
+                    "grid size-11 shrink-0 place-items-center rounded-2xl bg-linear-to-br text-white shadow-md",
+                    publicTone.gradient,
+                  )}
+                  aria-hidden="true"
+                >
+                  <CalendarDays className="size-5" />
+                </span>
+                <div>
+                  <p className={cn("text-[10px] font-bold tracking-[0.16em] uppercase", publicTone.accentText)}>
+                    SECURE RENTAL CHECKOUT
+                  </p>
+                  <h2 id="booking-title" className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                    Plan your rental.
+                  </h2>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    {item.name} · {formatCurrency(item.price)} / {rentalPeriod(item.rentalType)}
+                  </p>
+                </div>
               </div>
               <button
-                className="booking-close"
+                className="grid size-8 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
                 type="button"
                 aria-label="Close booking form"
                 disabled={isSubmitting}
                 onClick={closeModal}
               >
-                ×
+                <X className="size-4" aria-hidden="true" />
               </button>
             </div>
 
-            <div className="booking-step-bar" aria-label="Booking steps">
-              <span data-active="true">01 · Rental</span>
-              <span>02 · Details</span>
-              <span>03 · Payment</span>
+            <div className="px-6 pt-6 sm:px-8" aria-label="Booking steps">
+              <div className="flex flex-wrap gap-2">
+                {bookingSteps.map((step, index) => (
+                  <Badge
+                    key={step}
+                    variant={index === 0 ? "default" : "outline"}
+                    className={cn(
+                      "h-auto rounded-full px-3 py-1 text-[10px] font-bold tracking-[0.08em]",
+                      index === 0
+                        ? cn("border-transparent text-white shadow-sm", "bg-linear-to-r", publicTone.gradient)
+                        : "border-slate-200 bg-white text-slate-500",
+                    )}
+                  >
+                    {step}
+                  </Badge>
+                ))}
+              </div>
             </div>
+            <Separator className="mt-5" />
 
-            <form className="booking-form" onSubmit={handleCheckout}>
-              <div className="booking-date-fields">
-                <label>
-                  Rental start date
-                  <input
+            <form className="flex flex-col gap-5 px-6 py-6 sm:px-8" onSubmit={handleCheckout}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="booking-start" className="text-xs font-semibold text-slate-700">
+                    Rental start date
+                  </Label>
+                  <Input
+                    id="booking-start"
+                    className={fieldClass}
                     type="date"
                     min={today}
                     required
                     value={startDate}
                     onChange={(event) => updateField(() => setStartDate(event.target.value))}
                   />
-                </label>
-                <label>
-                  Rental end date
-                  <input
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="booking-end" className="text-xs font-semibold text-slate-700">
+                    Rental end date
+                  </Label>
+                  <Input
+                    id="booking-end"
+                    className={fieldClass}
                     type="date"
                     min={startDate || today}
                     required
                     value={endDate}
                     onChange={(event) => updateField(() => setEndDate(event.target.value))}
                   />
-                </label>
+                </div>
               </div>
               {dateRangeInvalid && (
-                <p className="booking-field-error" role="alert">
-                  End date must be the same as or later than the start date.
-                </p>
+                <FieldError>End date must be the same as or later than the start date.</FieldError>
               )}
 
-              <label>
-                Required quantity
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="booking-quantity" className="text-xs font-semibold text-slate-700">
+                  Required quantity
+                </Label>
+                <Input
+                  id="booking-quantity"
+                  className={fieldClass}
                   type="number"
                   min="1"
                   max={item.availableQuantity}
@@ -292,16 +371,18 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
                   value={quantity}
                   onChange={(event) => updateField(() => setQuantity(event.target.value))}
                 />
-              </label>
+              </div>
               {quantityInvalid && (
-                <p className="booking-field-error" role="alert">
-                  Enter a whole number from 1 to {item.availableQuantity}.
-                </p>
+                <FieldError>Enter a whole number from 1 to {item.availableQuantity}.</FieldError>
               )}
 
-              <label>
-                Contact number
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="booking-phone" className="text-xs font-semibold text-slate-700">
+                  Contact number
+                </Label>
+                <Input
+                  id="booking-phone"
+                  className={fieldClass}
                   type="tel"
                   autoComplete="tel"
                   minLength={7}
@@ -311,11 +392,15 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
                   value={phone}
                   onChange={(event) => updateField(() => setPhone(event.target.value))}
                 />
-              </label>
+              </div>
 
-              <label>
-                Delivery or pickup address
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="booking-address" className="text-xs font-semibold text-slate-700">
+                  Delivery or pickup address
+                </Label>
+                <Input
+                  id="booking-address"
+                  className={fieldClass}
                   type="text"
                   autoComplete="street-address"
                   minLength={5}
@@ -325,117 +410,177 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
                   value={address}
                   onChange={(event) => updateField(() => setAddress(event.target.value))}
                 />
-              </label>
+              </div>
 
-              <label>
-                Additional notes <span className="optional-label">Optional</span>
+              <div className="space-y-2">
+                <Label htmlFor="booking-notes" className="text-xs font-semibold text-slate-700">
+                  Additional notes <span className="text-[11px] font-normal text-slate-400">Optional</span>
+                </Label>
                 <textarea
+                  id="booking-notes"
                   rows={3}
                   maxLength={500}
                   placeholder="Anything the owner should know?"
                   value={notes}
                   onChange={(event) => updateField(() => setNotes(event.target.value))}
+                  className={cn(
+                    fieldClass,
+                    "h-auto min-h-20 resize-y py-2 focus-visible:outline-none",
+                  )}
                 />
-              </label>
-
-              <div className="booking-estimate">
-                <div>
-                  <span>Estimated total</span>
-                  <small>
-                    {units
-                      ? `${units} ${item.rentalType.toLowerCase()} ${units === 1 ? "period" : "periods"} × ${quantityValue || 0}`
-                      : `Rate: ${formatCurrency(item.price)} per ${rentalPeriod(item.rentalType)}`}
-                  </small>
-                </div>
-                <strong>{formatCurrency(total)}</strong>
               </div>
 
-              <div className="booking-account-box">
-                {token ? (
-                  <div className="booking-account-status">
-                    <span>Signed in as <strong>{signedInEmail || "your account"}</strong></span>
-                    <button className="booking-account-switch" type="button" onClick={signOut}>
-                      Sign out
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="booking-account-heading">
-                      <strong>{authMode === "login" ? "Sign in to book" : "Create a renter account"}</strong>
-                      <button
-                        className="booking-account-switch"
-                        type="button"
-                        onClick={() => {
-                          setAuthMode(authMode === "login" ? "register" : "login");
-                          setError("");
-                        }}
-                      >
-                        {authMode === "login" ? "Create account" : "I already have an account"}
-                      </button>
-                    </div>
-                    {authMode === "register" && (
-                      <label>
-                        Name
-                        <input
-                          type="text"
-                          autoComplete="name"
-                          minLength={2}
-                          maxLength={100}
-                          required
-                          value={name}
-                          onChange={(event) => updateField(() => setName(event.target.value))}
-                        />
-                      </label>
-                    )}
-                    <label>
-                      Email
-                      <input
-                        type="email"
-                        autoComplete="email"
-                        required
-                        value={email}
-                        onChange={(event) => updateField(() => setEmail(event.target.value))}
-                      />
-                    </label>
-                    <label>
-                      Password
-                      <input
-                        type="password"
-                        autoComplete={authMode === "login" ? "current-password" : "new-password"}
-                        minLength={6}
-                        required
-                        value={password}
-                        onChange={(event) => updateField(() => setPassword(event.target.value))}
-                      />
-                    </label>
-                    <GoogleSignInButton
-                      onCredential={handleGoogleCredential}
-                      onError={(message) => {
-                        notify(message, "error");
-                        setError(message);
-                      }}
-                    />
-                  </>
+              <Card
+                className={cn(
+                  appSurfaces.softCard,
+                  "relative gap-0 border-violet-100 bg-violet-50/60 py-3",
                 )}
-              </div>
+              >
+                <div aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-0.5 bg-linear-to-r", publicTone.gradient)} />
+                <CardContent className="px-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <span className="block text-xs font-semibold text-slate-700">
+                        Estimated total
+                      </span>
+                      <small className="mt-1 block text-[11px] leading-relaxed text-slate-500">
+                        {units
+                          ? `${units} ${item.rentalType.toLowerCase()} ${units === 1 ? "period" : "periods"} × ${quantityValue || 0}`
+                          : `Rate: ${formatCurrency(item.price)} per ${rentalPeriod(item.rentalType)}`}
+                      </small>
+                    </div>
+                    <strong className="shrink-0 text-xl font-bold tracking-tight text-slate-900">
+                      {formatCurrency(total)}
+                    </strong>
+                  </div>
+                </CardContent>
+              </Card>
 
-              {error && <p className="booking-field-error" role="alert">{error}</p>}
+              <Card className={cn(appSurfaces.softCard, "gap-0 border-slate-200/80 bg-slate-50/70 py-0")}>
+                <CardContent className="space-y-4 p-4">
+                  {token ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span className="inline-flex items-center gap-2 text-xs text-slate-600">
+                        <ShieldCheck className="size-4 shrink-0 text-emerald-600" aria-hidden="true" />
+                        Signed in as <strong className="font-semibold text-slate-900">{signedInEmail || "your account"}</strong>
+                      </span>
+                      <Button
+                        className="h-7 rounded-full px-3 text-xs font-semibold text-violet-700 hover:bg-violet-50 hover:text-violet-800"
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        onClick={signOut}
+                      >
+                        Sign out
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <strong className="text-sm font-semibold text-slate-900">
+                          {authMode === "login" ? "Sign in to book" : "Create a renter account"}
+                        </strong>
+                        <Button
+                          className="h-auto p-0 text-xs font-semibold text-violet-700 hover:text-fuchsia-700"
+                          variant="link"
+                          size="sm"
+                          type="button"
+                          onClick={() => {
+                            setAuthMode(authMode === "login" ? "register" : "login");
+                            setError("");
+                          }}
+                        >
+                          {authMode === "login" ? "Create account" : "I already have an account"}
+                        </Button>
+                      </div>
+                      {authMode === "register" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="booking-name" className="text-xs font-semibold text-slate-700">
+                            Name
+                          </Label>
+                          <Input
+                            id="booking-name"
+                            className={fieldClass}
+                            type="text"
+                            autoComplete="name"
+                            minLength={2}
+                            maxLength={100}
+                            required
+                            value={name}
+                            onChange={(event) => updateField(() => setName(event.target.value))}
+                          />
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label htmlFor="booking-email" className="text-xs font-semibold text-slate-700">
+                          Email
+                        </Label>
+                        <Input
+                          id="booking-email"
+                          className={fieldClass}
+                          type="email"
+                          autoComplete="email"
+                          required
+                          value={email}
+                          onChange={(event) => updateField(() => setEmail(event.target.value))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="booking-password" className="text-xs font-semibold text-slate-700">
+                          Password
+                        </Label>
+                        <Input
+                          id="booking-password"
+                          className={fieldClass}
+                          type="password"
+                          autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                          minLength={6}
+                          required
+                          value={password}
+                          onChange={(event) => updateField(() => setPassword(event.target.value))}
+                        />
+                      </div>
+                      <div className="flex justify-center pt-1">
+                        <GoogleSignInButton
+                          onCredential={handleGoogleCredential}
+                          onError={(message) => {
+                            notify(message, "error");
+                            setError(message);
+                          }}
+                        />
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-              <div className="booking-form-actions">
-                <button className="booking-cancel" type="button" disabled={isSubmitting} onClick={closeModal}>
+              {error && <FieldError>{error}</FieldError>}
+
+              <div className="flex items-center justify-end gap-3 pt-1">
+                <Button
+                  className="h-10 rounded-full border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                  variant="outline"
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={closeModal}
+                >
                   Cancel
-                </button>
-                <button
-                  className="button button-dark"
+                </Button>
+                <Button
+                  className={cn(
+                    "h-10 rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/20",
+                    "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+                    publicTone.gradient,
+                  )}
                   type="submit"
                   disabled={!canBook || isSubmitting}
                 >
                   {isSubmitting ? "Preparing checkout..." : "Continue to Stripe"}
-                  {!isSubmitting && <span aria-hidden="true">↗</span>}
-                </button>
+                  {!isSubmitting && <ArrowUpRight className="size-4" aria-hidden="true" />}
+                </Button>
               </div>
             </form>
-          </section>
+          </Card>
         </div>
       )}
     </>

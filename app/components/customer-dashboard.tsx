@@ -14,7 +14,9 @@ import {
   Truck,
   Wrench,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { appSurfaces, roleTones } from "../data/app-theme";
 import { apiRequest, formatCurrency, type EquipmentListing } from "../lib/api";
 import { DashboardShell } from "./dashboard-shell";
 import {
@@ -33,6 +35,7 @@ type Booking = {
   equipmentName: string;
   rentalStartDate: string;
   rentalEndDate: string;
+  createdAt?: string;
   quantity: number;
   totalAmount: number;
   bookingStatus: string;
@@ -42,6 +45,12 @@ type Booking = {
 type Favorite = { favoriteId: string; equipment: EquipmentListing | null };
 type Payment = { id: string; bookingId: string; status: string };
 
+const tone = roleTones.customer;
+// The shared UI kit reads tone from context; these two props still render inline CSS.
+const statGradient = "linear-gradient(135deg, #10b981, #14b8a6, #0ea5e9)";
+const statSoft = "#d1fae5";
+const heroGlow = "linear-gradient(135deg, #0d9488, #059669, #65a30d)";
+
 function formatDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
@@ -49,10 +58,10 @@ function formatDate(value: string) {
 }
 
 const categories = [
-  { name: "Construction", icon: Wrench, color: "#f97316", soft: "#fff7ed" },
-  { name: "Photography", icon: Camera, color: "#8b5cf6", soft: "#f5f3ff" },
-  { name: "Vehicles", icon: Truck, color: "#0ea5e9", soft: "#f0f9ff" },
-  { name: "Agriculture", icon: Tractor, color: "#059669", soft: "#ecfdf5" },
+  { name: "Construction", icon: Wrench, tile: "bg-orange-50 text-orange-600", bar: "from-orange-400 to-amber-500" },
+  { name: "Photography", icon: Camera, tile: "bg-violet-50 text-violet-600", bar: "from-violet-400 to-fuchsia-500" },
+  { name: "Vehicles", icon: Truck, tile: "bg-sky-50 text-sky-600", bar: "from-sky-400 to-blue-500" },
+  { name: "Agriculture", icon: Tractor, tile: "bg-emerald-50 text-emerald-600", bar: "from-emerald-400 to-teal-500" },
 ];
 
 export function CustomerDashboard() {
@@ -129,38 +138,35 @@ export function CustomerDashboard() {
   );
   const firstName = user?.name?.split(" ")[0] || "renter";
 
+  const statStyle = { gradient: statGradient, soft: statSoft };
   const stats = [
     {
       label: "Total bookings",
       value: bookings.length,
       hint: "Everything you've reserved",
       icon: CalendarDays,
-      gradient: "linear-gradient(135deg, #0d9488, #059669)",
-      soft: "#ecfdf5",
+      ...statStyle,
     },
     {
       label: "Active rentals",
       value: activeBookings.length,
       hint: "Pending or confirmed",
       icon: PackageSearch,
-      gradient: "linear-gradient(135deg, #0ea5e9, #2563eb)",
-      soft: "#eff6ff",
+      ...statStyle,
     },
     {
       label: "Saved favorites",
       value: favorites.length,
       hint: "Gear you're watching",
       icon: Heart,
-      gradient: "linear-gradient(135deg, #f43f5e, #e11d48)",
-      soft: "#fff1f2",
+      ...statStyle,
     },
     {
       label: "Total spent",
       value: formatCurrency(paidBookingTotal),
       hint: `${payments.filter((payment) => payment.status === "paid").length} confirmed payments`,
       icon: CircleDollarSign,
-      gradient: "linear-gradient(135deg, #f59e0b, #ea580c)",
-      soft: "#fffbeb",
+      ...statStyle,
     },
   ];
 
@@ -176,10 +182,18 @@ export function CustomerDashboard() {
       onRetry={refreshSession}
     >
       <HeroBanner
-        gradient="linear-gradient(120deg, #0f766e 0%, #059669 52%, #65a30d 100%)"
+        gradient={heroGlow}
         eyebrow="YOUR RENTAL HUB"
         title={`Hey ${firstName}, ready for your next project?`}
         description="Find the right gear, follow your rentals, and pick up right where you left off."
+        action={
+          <Link
+            href="/equipment"
+            className={`inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 ${tone.accentText}`}
+          >
+            Find equipment <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+        }
       />
 
       {dataError ? <PanelError message={dataError} /> : null}
@@ -200,12 +214,12 @@ export function CustomerDashboard() {
               title="Recent rentals"
               subtitle="Your latest booking activity"
               icon={CalendarDays}
-              soft="#ecfdf5"
-              accent="#059669"
+              soft={tone.iconTile}
+              accent={tone.panelAccent}
               className="xl:col-span-2"
               action={
-                <Link href="/account/rentals" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
-                  View all <ArrowUpRight size={13} className="inline" aria-hidden="true" />
+                <Link href="/account/rentals" className={`inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:brightness-90 ${tone.accentText}`}>
+                  View all <ArrowUpRight size={13} aria-hidden="true" />
                 </Link>
               }
             >
@@ -215,7 +229,12 @@ export function CustomerDashboard() {
                   title="No rentals yet"
                   description="Browse available equipment and book something for your next project."
                   action={
-                    <Link href="/equipment" className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
+                    <Link
+                      href="/equipment"
+                      className={buttonVariants({
+                        className: `h-9 rounded-xl text-white shadow-sm hover:brightness-110 ${tone.gradient}`,
+                      })}
+                    >
                       Browse equipment <ArrowUpRight size={14} aria-hidden="true" />
                     </Link>
                   }
@@ -223,14 +242,14 @@ export function CustomerDashboard() {
               ) : (
                 <div className="space-y-3">
                   {bookings.slice(0, 5).map((booking) => (
-                    <article key={booking.id} className="rounded-xl border border-slate-200 p-4">
+                    <article key={booking.id} className={`p-4 transition-colors hover:border-slate-300 ${appSurfaces.softCard}`}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <h3 className="text-sm font-semibold text-slate-900">{booking.equipmentName}</h3>
                           <p className="mt-1 text-xs text-slate-500">
-                            {formatDate(booking.rentalStartDate)} → {formatDate(booking.rentalEndDate)} ·{" "}
-                            {booking.quantity} {booking.quantity === 1 ? "item" : "items"}
+                            {formatDate(booking.rentalStartDate)} to {formatDate(booking.rentalEndDate)} · {booking.quantity} {booking.quantity === 1 ? "item" : "items"}
                           </p>
+                          <p className="mt-1 text-xs text-slate-400">Booked: {booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : "—"}</p>
                         </div>
                         <strong className="text-sm text-slate-900">{formatCurrency(booking.totalAmount)}</strong>
                       </div>
@@ -240,7 +259,7 @@ export function CustomerDashboard() {
                         {booking.equipment?.id ? (
                           <Link
                             href={`/equipment/${booking.equipment.id}`}
-                            className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+                            className={`ml-auto inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:brightness-90 ${tone.accentText}`}
                           >
                             View gear <ArrowUpRight size={13} aria-hidden="true" />
                           </Link>
@@ -252,21 +271,21 @@ export function CustomerDashboard() {
               )}
             </Panel>
 
-            <Panel title="Quick actions" subtitle="Get things done faster" icon={Sparkles} soft="#ecfdf5" accent="#059669">
+            <Panel title="Quick actions" subtitle="Get things done faster" icon={Sparkles} soft={tone.iconTile} accent={tone.panelAccent}>
               <div className="space-y-3">
                 {[
-                  { label: "Browse all equipment", href: "/equipment", color: "#059669", icon: PackageSearch },
-                  { label: "Manage account details", href: "/account/profile", color: "#0ea5e9", icon: Wrench },
-                  { label: "View payment receipts", href: "/account/rentals", color: "#f59e0b", icon: CircleDollarSign },
+                  { label: "Browse all equipment", href: "/equipment", icon: PackageSearch },
+                  { label: "Manage account details", href: "/account/profile", icon: Wrench },
+                  { label: "View payment receipts", href: "/account/rentals", icon: CircleDollarSign },
                 ].map((action) => {
                   const Icon = action.icon;
                   return (
                     <Link
                       key={action.label}
                       href={action.href}
-                      className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 transition-colors hover:border-slate-200 hover:bg-white"
+                      className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm"
                     >
-                      <span className="grid size-9 place-items-center rounded-lg text-white" style={{ background: action.color }}>
+                      <span className={`grid size-9 place-items-center rounded-lg ${tone.iconTile}`}>
                         <Icon size={16} aria-hidden="true" />
                       </span>
                       <span className="flex-1 text-sm font-medium text-slate-700">{action.label}</span>
@@ -283,11 +302,11 @@ export function CustomerDashboard() {
             title="Favorite equipment"
             subtitle="Gear you saved for later"
             icon={Heart}
-            soft="#fff1f2"
-            accent="#e11d48"
+            soft={tone.iconTile}
+            accent={tone.panelAccent}
             action={
-              <Link href="/account/favorites" className="text-xs font-semibold text-rose-600 hover:text-rose-700">
-                Manage <ArrowUpRight size={13} className="inline" aria-hidden="true" />
+              <Link href="/account/favorites" className={`inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:brightness-90 ${tone.accentText}`}>
+                Manage <ArrowUpRight size={13} aria-hidden="true" />
               </Link>
             }
           >
@@ -297,7 +316,12 @@ export function CustomerDashboard() {
                 title="Nothing saved yet"
                 description="Tap the heart on any listing to keep it here for later."
                 action={
-                  <Link href="/equipment" className="inline-flex items-center gap-1.5 rounded-xl bg-rose-500 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-600">
+                  <Link
+                    href="/equipment"
+                    className={buttonVariants({
+                      className: `h-9 rounded-xl text-white shadow-sm hover:brightness-110 ${tone.gradient}`,
+                    })}
+                  >
                     Explore equipment <ArrowUpRight size={14} aria-hidden="true" />
                   </Link>
                 }
@@ -308,18 +332,23 @@ export function CustomerDashboard() {
                   const item = favorite.equipment;
                   if (!item) return null;
                   return (
-                    <article key={favorite.favoriteId} className="group overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    <article key={favorite.favoriteId} className={`group overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md ${appSurfaces.card}`}>
                       <div className="relative h-32 overflow-hidden bg-slate-100">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.image} alt={item.name} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       </div>
                       <div className="p-4">
-                        <h3 className="truncate text-sm font-semibold text-slate-900">{item.name}</h3>
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="truncate text-sm font-semibold text-slate-900">{item.name}</h3>
+                          <Badge variant="secondary" className={`h-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] ${tone.softBadge}`}>
+                            Saved
+                          </Badge>
+                        </div>
                         <p className="mt-1 text-xs text-slate-500">{item.category} · {item.location}</p>
-                        <div className="mt-3 flex items-center justify-between">
-                          <strong className="text-sm text-emerald-700">{formatCurrency(item.price)}</strong>
+                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                          <strong className={`text-sm ${tone.accentText}`}>{formatCurrency(item.price)}</strong>
                           <div className="flex items-center gap-2">
-                            <Link href={`/equipment/${item.id}`} className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+                            <Link href={`/equipment/${item.id}`} className={`text-xs font-semibold transition-colors hover:brightness-90 ${tone.accentText}`}>
                               View
                             </Link>
                             <Button
@@ -341,7 +370,7 @@ export function CustomerDashboard() {
             )}
           </Panel>
 
-          <Panel title="Explore by category" subtitle="Find gear for whatever you're making" icon={PackageSearch} soft="#eff6ff" accent="#2563eb">
+          <Panel title="Explore by category" subtitle="Find gear for whatever you're making" icon={PackageSearch} soft={tone.iconTile} accent={tone.panelAccent}>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {categories.map((category) => {
                 const Icon = category.icon;
@@ -349,13 +378,14 @@ export function CustomerDashboard() {
                   <Link
                     key={category.name}
                     href="/equipment"
-                    className="rounded-xl border border-slate-200 p-4 transition-transform hover:-translate-y-1 hover:shadow-md"
+                    className="group overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 transition-all hover:-translate-y-1 hover:border-slate-300 hover:shadow-md"
                   >
-                    <span className="grid size-10 place-items-center rounded-xl" style={{ background: category.soft, color: category.color }}>
+                    <span className={`block h-0.5 w-10 rounded-full bg-linear-to-r ${category.bar}`} />
+                    <span className={`mt-3 grid size-10 place-items-center rounded-xl ${category.tile}`}>
                       <Icon size={19} aria-hidden="true" />
                     </span>
-                    <p className="mt-3 text-sm font-semibold text-slate-800">{category.name}</p>
-                    <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-400">
+                    <p className="mt-3 text-sm font-semibold text-slate-900">{category.name}</p>
+                    <p className={`mt-1 inline-flex items-center gap-1 text-xs font-medium transition-colors ${tone.accentText}`}>
                       Explore <ArrowUpRight size={12} aria-hidden="true" />
                     </p>
                   </Link>

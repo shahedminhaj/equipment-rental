@@ -3,11 +3,33 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Check,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  PackageSearch,
+  Printer,
+  ReceiptText,
+  RefreshCw,
+  Sparkles,
+  UserRound,
+  Wrench,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { appSurfaces, publicTone } from "../data/app-theme";
 import { apiRequest, formatCurrency, type EquipmentListing } from "../lib/api";
 import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
 import { dashboardHref } from "../lib/dashboard-routes";
@@ -21,6 +43,7 @@ type Booking = {
   equipmentName: string;
   rentalStartDate: string;
   rentalEndDate: string;
+  createdAt?: string;
   quantity: number;
   totalAmount: number;
   bookingStatus: string;
@@ -80,6 +103,44 @@ function formatRentalDate(value: string) {
       }).format(date);
 }
 
+function statusBadgeClass(status: string) {
+  const value = status.toLowerCase();
+  if (value.includes("paid") || value.includes("succeeded") || value.includes("confirmed")) {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+  if (value.includes("fail") || value.includes("cancel") || value.includes("refund")) {
+    return "border-rose-200 bg-rose-50 text-rose-700";
+  }
+  if (value.includes("pending") || value.includes("processing")) {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+  return "border-slate-200 bg-slate-100 text-slate-600";
+}
+
+function initialsFor(name?: string) {
+  const initials = (name || "")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+  return initials || "FK";
+}
+
+const inputClass = cn(
+  "h-11 rounded-xl border-slate-200 bg-slate-50/80 px-3.5 text-sm text-slate-900 shadow-sm transition-colors",
+  "placeholder:text-slate-400 focus-visible:border-violet-400 focus-visible:ring-3 focus-visible:ring-violet-200/60",
+  "read-only:bg-slate-100/80 read-only:text-slate-500",
+);
+
+const primaryButtonClass = cn(
+  "h-11 w-full rounded-full px-6 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25",
+  "transition-all hover:-translate-y-0.5",
+  "bg-linear-to-r",
+  publicTone.gradient,
+  "hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+);
+
 export function AccountDashboard({
   initialView = "overview",
 }: {
@@ -99,10 +160,12 @@ export function AccountDashboard({
   const [accountDataLoaded, setAccountDataLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [photo, setPhoto] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
@@ -132,6 +195,7 @@ export function AccountDashboard({
         setProfile(account.user);
         setName(account.user.name);
         setEmail(account.user.email);
+        setPhoto(account.user.photo || "");
         setPhone(account.user.phone || "");
         setAddress(account.user.address || "");
         setBookings(account.bookings);
@@ -217,6 +281,7 @@ export function AccountDashboard({
       }
       setProfile(account.user);
       setName(account.user.name);
+      setPhoto(account.user.photo || "");
       setPhone(account.user.phone || "");
       setAddress(account.user.address || "");
       setBookings(account.bookings);
@@ -227,6 +292,43 @@ export function AccountDashboard({
       setError(loadError instanceof Error ? loadError.message : "Could not load your account.");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleProfilePhotoUpload(file: File | null) {
+    if (!file) return;
+    const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+    if (!apiKey) {
+      setError("Image upload is not configured. Please provide a direct image URL.");
+      return;
+    }
+    setIsUploadingPhoto(true);
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: "POST",
+        body: form,
+      });
+      const payload = (await response.json()) as {
+        success?: boolean;
+        data?: { display_url?: string; url?: string };
+        error?: { message?: string };
+      };
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error?.message || "Could not upload image");
+      }
+      const url = payload.data?.display_url || payload.data?.url || "";
+      if (!url) throw new Error("Image upload did not return a URL");
+      setPhoto(url);
+      notify("Profile photo uploaded successfully.");
+    } catch (uploadError) {
+      const message = uploadError instanceof Error ? uploadError.message : "Could not upload image";
+      notify(message, "error");
+      setError(message);
+    } finally {
+      setIsUploadingPhoto(false);
     }
   }
 
@@ -243,12 +345,14 @@ export function AccountDashboard({
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: name.trim(),
+          photo: photo.trim(),
           phone: phone.trim(),
           address: address.trim(),
         }),
       });
       setProfile(result.user);
       setName(result.user.name);
+      setPhoto(result.user.photo || "");
       setPhone(result.user.phone || "");
       setAddress(result.user.address || "");
       setNotice("Your profile has been updated.");
@@ -291,334 +395,656 @@ export function AccountDashboard({
 
   return (
     <>
-    <main className="account-page">
-      <div className="account-shell">
-        <div className="account-heading">
-          <div>
-            <p className="eyebrow"><span className="eyebrow-line" /> YOUR FIELDKIT</p>
-            <h1>{isAuthenticated ? "Your account." : "Welcome back."}</h1>
-            <p>
-              {isAuthenticated
-                ? "Keep your details up to date and stay on top of your rentals."
-                : "Sign in or create an account to manage your rentals."}
-            </p>
-          </div>
-          {isAuthenticated && (
-            <button className="account-signout" type="button" onClick={signOut}>
-              Sign out
-            </button>
-          )}
-        </div>
+      <main className={cn(appSurfaces.page, "account-page-v2 relative isolate overflow-hidden")}>
+        <div aria-hidden="true" className={appSurfaces.pageGlow} />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-40 top-10 size-[26rem] rounded-full bg-fuchsia-200/50 blur-[120px]"
+        />
 
-        {isLoading ? (
-          <p className="account-message" role="status">Loading your account...</p>
-        ) : !isAuthenticated ? (
-          <Card className="account-card account-auth-card gap-0">
-            <CardHeader className="account-card-heading p-0">
-              <span className="eyebrow">CUSTOMER ACCOUNT</span>
-              <h2>{authMode === "login" ? "Sign in to Fieldkit" : "Create your account"}</h2>
-              <p>
-                {authMode === "login"
-                  ? "Access your profile and booking history."
-                  : "Join Fieldkit to book equipment and track your rentals."}
+        <div className="relative mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+          <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className={cn(appSurfaces.eyebrow, "flex items-center gap-2", publicTone.accentText)}>
+                <span className="h-px w-6 bg-current" />
+                Your Fieldkit
               </p>
-            </CardHeader>
-            <CardContent className="p-0">
-              <form className="account-form" onSubmit={handleAuthentication}>
-              {authMode === "register" && (
-                <div className="account-form-field">
-                  <Label htmlFor="customer-name">Full name</Label>
-                  <Input
-                    id="customer-name"
-                    autoComplete="name"
-                    maxLength={100}
-                    minLength={2}
-                    required
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                  />
-                </div>
-              )}
-              <div className="account-form-field">
-                <Label htmlFor="customer-email">Email address</Label>
-                <Input
-                  id="customer-email"
-                  autoComplete="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
+              <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+                {isAuthenticated ? "Your account." : "Welcome back."}
+              </h1>
+              <p className={cn("mt-3 max-w-xl", appSurfaces.body)}>
+                {isAuthenticated
+                  ? "Keep your details up to date and stay on top of your rentals."
+                  : "Sign in or create an account to manage your rentals."}
+              </p>
+            </div>
+            {isAuthenticated && (
+              <div className="flex flex-wrap items-center gap-2">
+                {profile && (
+                  <Badge
+                    variant="outline"
+                    className={cn("h-auto rounded-full px-3 py-1 text-[11px] font-bold capitalize", publicTone.softBadge)}
+                  >
+                    {profile.role}
+                  </Badge>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={signOut}
+                  className="h-10 rounded-full border-slate-200 bg-white text-slate-700 hover:bg-violet-50 hover:text-violet-700"
+                >
+                  <LogOut className="size-4" />
+                  Sign out
+                </Button>
               </div>
-              <div className="account-form-field">
-                <Label htmlFor="customer-password">Password</Label>
-                <Input
-                  id="customer-password"
-                  autoComplete={authMode === "login" ? "current-password" : "new-password"}
-                  type="password"
-                  minLength={6}
-                  pattern={authMode === "register" ? "(?=.*[a-z])(?=.*[A-Z]).{6,}" : undefined}
-                  title="Use at least 6 characters, including uppercase and lowercase letters."
-                  required
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
+            )}
+          </header>
+
+          {isLoading ? (
+            <div className={cn(appSurfaces.card, "p-7 sm:p-9")} role="status">
+              <p className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <span className="size-2 animate-pulse rounded-full bg-violet-500" />
+                Loading your account...
+              </p>
+              <div className="mt-6 grid gap-3">
+                <Skeleton className="h-20 w-full rounded-2xl bg-violet-100/80" />
+                <Skeleton className="h-20 w-full rounded-2xl bg-fuchsia-100/70" />
+                <Skeleton className="h-20 w-2/3 rounded-2xl bg-sky-100/70" />
               </div>
-              {authMode === "register" && (
-                <p className="account-form-hint">
-                  Use at least 6 characters with uppercase and lowercase letters.
+            </div>
+          ) : !isAuthenticated ? (
+            <Card
+              className={cn(appSurfaces.card, "mx-auto w-full max-w-xl gap-0 [--card-spacing:0px]")}
+            >
+              <div className={cn("h-1.5 w-full bg-linear-to-r", publicTone.panelAccent)} />
+              <CardHeader className="p-7 pb-0 sm:p-9 sm:pb-0">
+                <span className={cn("flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] uppercase", publicTone.softBadge)}>
+                  <Sparkles className="size-3" />
+                  Customer account
+                </span>
+                <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">
+                  {authMode === "login" ? "Sign in to Fieldkit" : "Create your account"}
+                </h2>
+                <p className={cn("mt-2", appSurfaces.body)}>
+                  {authMode === "login"
+                    ? "Access your profile and booking history."
+                    : "Join Fieldkit to book equipment and track your rentals."}
                 </p>
+              </CardHeader>
+              <CardContent className="p-7 pt-5 sm:p-9 sm:pt-6">
+                <form className="grid gap-4" onSubmit={handleAuthentication}>
+                  {authMode === "register" && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="customer-name" className="text-xs font-semibold text-slate-700">
+                        Full name
+                      </Label>
+                      <Input
+                        id="customer-name"
+                        autoComplete="name"
+                        maxLength={100}
+                        minLength={2}
+                        required
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                  )}
+                  <div className="grid gap-2">
+                    <Label htmlFor="customer-email" className="text-xs font-semibold text-slate-700">
+                      Email address
+                    </Label>
+                    <Input
+                      id="customer-email"
+                      autoComplete="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="customer-password" className="text-xs font-semibold text-slate-700">
+                      Password
+                    </Label>
+                    <Input
+                      id="customer-password"
+                      autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                      type="password"
+                      minLength={6}
+                      pattern={authMode === "register" ? "(?=.*[a-z])(?=.*[A-Z]).{6,}" : undefined}
+                      title="Use at least 6 characters, including uppercase and lowercase letters."
+                      required
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  {authMode === "register" && (
+                    <p className="text-xs leading-5 text-slate-500">
+                      Use at least 6 characters with uppercase and lowercase letters.
+                    </p>
+                  )}
+                  {error && (
+                    <Alert variant="destructive" className="rounded-xl border-rose-200 bg-rose-50/80">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button className={primaryButtonClass} type="submit" disabled={isSubmitting}>
+                    {isSubmitting
+                      ? "Please wait..."
+                      : authMode === "login"
+                        ? "Sign in"
+                        : "Create account"}
+                    {!isSubmitting && <ArrowUpRight className="size-4" />}
+                  </Button>
+                  <div className="relative py-2">
+                    <Separator className="bg-slate-200" />
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="bg-white px-3 text-[10px] font-bold tracking-[0.14em] text-slate-400 uppercase">
+                        Or continue with
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex min-h-11 w-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
+                    <GoogleSignInButton
+                      onCredential={handleGoogleCredential}
+                      onError={setError}
+                    />
+                  </div>
+                </form>
+                <p className="pt-5 text-center text-sm text-slate-600">
+                  {authMode === "login" ? "New to Fieldkit?" : "Already have an account?"}{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode(authMode === "login" ? "register" : "login");
+                      setError("");
+                    }}
+                    className={cn(appSurfaces.link, "cursor-pointer hover:underline")}
+                  >
+                    {authMode === "login" ? "Create an account" : "Sign in"}
+                  </button>
+                </p>
+              </CardContent>
+            </Card>
+          ) : !accountDataLoaded ? (
+            <Card
+              className={cn(
+                appSurfaces.card,
+                "mx-auto grid w-full max-w-xl justify-items-start gap-4 p-7 sm:p-9",
               )}
+            >
               {error && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="rounded-xl border-rose-200 bg-rose-50/80">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <Button className="button button-dark account-submit" type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? "Please wait..."
-                  : authMode === "login"
-                    ? "Sign in"
-                    : "Create account"}
-                {!isSubmitting && <span aria-hidden="true">↗</span>}
+              <Button
+                className={primaryButtonClass}
+                type="button"
+                disabled={isLoading}
+                onClick={retryLoadingAccount}
+              >
+                <RefreshCw className="size-4" />
+                {isLoading ? "Loading..." : "Retry loading account"}
               </Button>
-              <div className="account-google-signin">
-                <span>OR CONTINUE WITH</span>
-                <GoogleSignInButton
-                  onCredential={handleGoogleCredential}
-                  onError={setError}
-                />
-              </div>
-              </form>
-              <p className="account-switch">
-                {authMode === "login" ? "New to Fieldkit?" : "Already have an account?"}{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode(authMode === "login" ? "register" : "login");
-                    setError("");
-                  }}
-                >
-                  {authMode === "login" ? "Create an account" : "Sign in"}
-                </button>
-              </p>
-            </CardContent>
-          </Card>
-        ) : !accountDataLoaded ? (
-          <section className="account-card account-load-error">
-            {error && <p className="account-error" role="alert">{error}</p>}
-            <button
-              className="button button-dark"
-              type="button"
-              disabled={isLoading}
-              onClick={retryLoadingAccount}
-            >
-              {isLoading ? "Loading..." : "Retry loading account"}
-            </button>
-            <button className="account-switch" type="button" onClick={signOut}>
-              Sign out and use a different account
-            </button>
-          </section>
-        ) : (
-          <div className="account-content">
-            {error && <p className="account-error account-feedback" role="alert">{error}</p>}
-            {notice && <p className="account-success account-feedback" role="status">{notice}</p>}
-
-            <nav className="dashboard-tabs" aria-label="Account sections">
-              {([
-                ["overview", "Overview"],
-                ["rentals", "My rentals"],
-                ["favorites", "Favorites"],
-                ["profile", "Profile"],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={view === value ? "is-active" : ""}
-                  onClick={() => setView(value)}
-                  aria-current={view === value ? "page" : undefined}
-                >
-                  {label}
-                </button>
-              ))}
-            </nav>
-
-            <div className="account-grid">
-              {view !== "rentals" && view !== "favorites" && (
-              <section className="account-card">
-                <div className="account-card-heading">
-                  <span className="eyebrow">PERSONAL DETAILS</span>
-                  <h2>Your profile</h2>
-                  <p>These details help owners coordinate your rental.</p>
-                </div>
-                <form className="account-form" onSubmit={saveProfile}>
-                  <label>
-                    Full name
-                    <input
-                      autoComplete="name"
-                      maxLength={100}
-                      minLength={2}
-                      required
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    Email address
-                    <input type="email" value={profile?.email || email} readOnly />
-                  </label>
-                  <label>
-                    Phone number
-                    <input
-                      autoComplete="tel"
-                      maxLength={30}
-                      type="tel"
-                      value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    Address
-                    <textarea
-                      autoComplete="street-address"
-                      maxLength={300}
-                      rows={3}
-                      value={address}
-                      onChange={(event) => setAddress(event.target.value)}
-                    />
-                  </label>
-                  <button className="button button-dark account-submit" type="submit" disabled={isSaving}>
-                    {isSaving ? "Saving..." : "Save changes"}
-                  </button>
-                </form>
-              </section>
+              <button
+                type="button"
+                onClick={signOut}
+                className={cn(appSurfaces.link, "cursor-pointer text-sm hover:underline")}
+              >
+                Sign out and use a different account
+              </button>
+            </Card>
+          ) : (
+            <div className="grid gap-5">
+              {error && (
+                <Alert variant="destructive" className="rounded-2xl border-rose-200 bg-rose-50/80">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {notice && (
+                <Alert className="rounded-2xl border-emerald-200 bg-emerald-50/80 text-emerald-800">
+                  <Check className="size-4" />
+                  <AlertDescription>{notice}</AlertDescription>
+                </Alert>
               )}
 
-              {view !== "favorites" && view !== "profile" && (
-              <section className="account-card account-bookings">
-                <div className="account-card-heading account-bookings-heading">
-                  <div>
-                    <span className="eyebrow">YOUR RENTALS</span>
-                    <h2>Booking history</h2>
-                  </div>
-                  <span className="account-booking-count">{bookings.length}</span>
-                </div>
-                {bookings.length ? (
-                  <div className="account-booking-list">
-                    {bookings.map((booking) => {
-                      const payment = payments.find((item) => String(item.bookingId) === booking.id);
-                      return (
-                      <article className="account-booking" key={booking.id}>
-                        <div className="account-booking-top">
-                          <div>
-                            <h3>{booking.equipmentName}</h3>
-                            <p>
-                              {formatRentalDate(booking.rentalStartDate)} –{" "}
-                              {formatRentalDate(booking.rentalEndDate)}
-                              {" · "}{booking.quantity} {booking.quantity === 1 ? "item" : "items"}
-                            </p>
-                          </div>
-                          <strong>{formatCurrency(booking.totalAmount)}</strong>
+              <Tabs
+                value={view}
+                onValueChange={(value) => {
+                  if (
+                    value === "overview" ||
+                    value === "rentals" ||
+                    value === "favorites" ||
+                    value === "profile"
+                  ) {
+                    setView(value);
+                  }
+                }}
+                className="w-full"
+              >
+                <TabsList className="flex w-full flex-wrap justify-start gap-1 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-sm group-data-horizontal/tabs:h-auto">
+                  <TabsTrigger
+                    value="overview"
+                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-violet-600 data-active:via-fuchsia-600 data-active:to-rose-500 data-active:text-white data-active:shadow-md data-active:shadow-fuchsia-500/20"
+                  >
+                    <LayoutDashboard className="size-4" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="rentals"
+                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-violet-600 data-active:via-fuchsia-600 data-active:to-rose-500 data-active:text-white data-active:shadow-md data-active:shadow-fuchsia-500/20"
+                  >
+                    <CalendarDays className="size-4" />
+                    My rentals
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="favorites"
+                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-violet-600 data-active:via-fuchsia-600 data-active:to-rose-500 data-active:text-white data-active:shadow-md data-active:shadow-fuchsia-500/20"
+                  >
+                    <Heart className="size-4" />
+                    Favorites
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="profile"
+                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-violet-600 data-active:via-fuchsia-600 data-active:to-rose-500 data-active:text-white data-active:shadow-md data-active:shadow-fuchsia-500/20"
+                  >
+                    <UserRound className="size-4" />
+                    Profile
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              <div className="grid gap-5 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.15fr)]">
+                {view !== "rentals" && view !== "favorites" && (
+                  <Card
+                    className={cn(
+                      appSurfaces.card,
+                      "gap-0",
+                      view === "profile" ? "lg:col-span-2" : "lg:row-span-2",
+                    )}
+                  >
+                    <div className={cn("h-1.5 w-full bg-linear-to-r", publicTone.panelAccent)} />
+                    <CardHeader className="p-6 pb-0 sm:p-7 sm:pb-0">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="size-11 ring-2 ring-violet-100">
+                          <AvatarFallback className={cn("text-xs font-bold", publicTone.softBadge)}>
+                            {initialsFor(profile?.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className={appSurfaces.eyebrow}>Personal details</p>
+                          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">
+                            Your profile
+                          </h2>
+                          <p className={cn("mt-1", appSurfaces.body)}>
+                            These details help owners coordinate your rental.
+                          </p>
                         </div>
-                        <div className="account-booking-bottom">
-                          <span className={`account-status account-status-${booking.paymentStatus}`}>
-                            Payment: {booking.paymentStatus}
-                          </span>
-                          <span className="account-status">
-                            Booking: {booking.bookingStatus}
-                          </span>
-                          {booking.equipment?.id && (
-                            <Link href={`/equipment/${booking.equipment.id}`}>
-                              View equipment <span aria-hidden="true">↗</span>
-                            </Link>
-                          )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6 pt-5 sm:p-7 sm:pt-6">
+                      <form className="grid gap-4" onSubmit={saveProfile}>
+                        <div className="grid gap-2">
+                          <Label htmlFor="profile-name" className="text-xs font-semibold text-slate-700">
+                            Full name
+                          </Label>
+                          <Input
+                            id="profile-name"
+                            autoComplete="name"
+                            maxLength={100}
+                            minLength={2}
+                            required
+                            value={name}
+                            onChange={(event) => setName(event.target.value)}
+                            className={inputClass}
+                          />
                         </div>
-                        {payment?.status === "paid" && (
-                          <button
-                            className="account-receipt-button"
-                            type="button"
-                            onClick={() => setReceiptBooking(booking)}
+                        <div className="grid gap-2">
+                          <Label htmlFor="profile-email" className="text-xs font-semibold text-slate-700">
+                            Email address
+                          </Label>
+                          <Input
+                            id="profile-email"
+                            type="email"
+                            value={profile?.email || email}
+                            readOnly
+                            className={inputClass}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="profile-photo" className="text-xs font-semibold text-slate-700">
+                            Profile image URL or upload
+                          </Label>
+                          <Input
+                            id="profile-photo"
+                            type="url"
+                            placeholder="https://..."
+                            value={photo}
+                            onChange={(event) => setPhoto(event.target.value)}
+                            className={inputClass}
+                          />
+                          <Input
+                            id="profile-photo-file"
+                            type="file"
+                            accept="image/*"
+                            className={cn(inputClass, "h-auto py-2")}
+                            onChange={(event) => void handleProfilePhotoUpload(event.target.files?.[0] || null)}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="profile-phone" className="text-xs font-semibold text-slate-700">
+                            Phone number
+                          </Label>
+                          <Input
+                            id="profile-phone"
+                            autoComplete="tel"
+                            maxLength={30}
+                            type="tel"
+                            value={phone}
+                            onChange={(event) => setPhone(event.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="profile-address" className="text-xs font-semibold text-slate-700">
+                            Address
+                          </Label>
+                          <textarea
+                            id="profile-address"
+                            autoComplete="street-address"
+                            maxLength={300}
+                            rows={3}
+                            value={address}
+                            onChange={(event) => setAddress(event.target.value)}
+                            className={cn(
+                              "min-h-24 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-colors",
+                              "placeholder:text-slate-400 focus-visible:border-violet-400 focus-visible:ring-3 focus-visible:ring-violet-200/60",
+                            )}
+                          />
+                        </div>
+                        <Button className={primaryButtonClass} type="submit" disabled={isSaving || isUploadingPhoto}>
+                          {isUploadingPhoto ? "Uploading photo..." : isSaving ? "Saving..." : "Save changes"}
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {view !== "favorites" && view !== "profile" && (
+                  <Card
+                    className={cn(
+                      appSurfaces.card,
+                      "gap-0",
+                      view === "rentals" && "lg:col-span-2",
+                    )}
+                  >
+                    <div className={cn("h-1.5 w-full bg-linear-to-r", publicTone.panelAccent)} />
+                    <CardHeader className="p-6 pb-0 sm:p-7 sm:pb-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={cn("grid size-10 place-items-center rounded-xl", publicTone.iconTile)}
                           >
-                            View / print payment receipt
-                          </button>
-                        )}
-                      </article>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="account-empty-bookings">
-                    <span aria-hidden="true">↗</span>
-                    <h3>{profile?.role === "customer" ? "No bookings yet" : "Your rentals are managed separately"}</h3>
-                    <p>
-                      {profile?.role === "customer"
-                        ? "Your paid and pending rentals will appear here."
-                        : "Open the management dashboard to manage your listings and rentals."}
-                    </p>
-                    <Link className="button button-dark" href={profile?.role === "customer" ? "/equipment" : "/dashboard"}>
-                      {profile?.role === "customer" ? "Find equipment" : "Open dashboard"}
-                      <span aria-hidden="true">↗</span>
-                    </Link>
-                  </div>
+                            <CalendarDays className="size-5" />
+                          </span>
+                          <div>
+                            <p className={appSurfaces.eyebrow}>Your rentals</p>
+                            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">
+                              Booking history
+                            </h2>
+                          </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "grid size-9 shrink-0 place-items-center rounded-full text-xs font-bold",
+                            publicTone.softBadge,
+                          )}
+                        >
+                          {bookings.length}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6 pt-5 sm:p-7 sm:pt-6">
+                      {bookings.length ? (
+                        <div className="grid gap-3">
+                          {bookings.map((booking) => {
+                            const payment = payments.find((item) => String(item.bookingId) === booking.id);
+                            return (
+                              <article
+                                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors hover:border-violet-200"
+                                key={booking.id}
+                              >
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <h3 className="text-sm font-bold text-slate-900">
+                                      {booking.equipmentName}
+                                    </h3>
+                                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                                      {formatRentalDate(booking.rentalStartDate)} - {formatRentalDate(booking.rentalEndDate)} · {booking.quantity} {booking.quantity === 1 ? "item" : "items"}
+                                    </p>
+                                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                                      Booking date: {booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : "—"}
+                                    </p>
+                                  </div>
+                                  <strong className="text-sm font-bold text-slate-900">
+                                    {formatCurrency(booking.totalAmount)}
+                                  </strong>
+                                </div>
+                                <Separator className="my-3 bg-slate-100" />
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "h-auto rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize",
+                                      statusBadgeClass(booking.paymentStatus),
+                                    )}
+                                  >
+                                    Payment: {booking.paymentStatus}
+                                  </Badge>
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "h-auto rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize",
+                                      statusBadgeClass(booking.bookingStatus),
+                                    )}
+                                  >
+                                    Booking: {booking.bookingStatus}
+                                  </Badge>
+                                  {booking.equipment?.id && (
+                                    <Link
+                                      href={`/equipment/${booking.equipment.id}`}
+                                      className={cn(
+                                        appSurfaces.link,
+                                        "ml-auto inline-flex items-center gap-1 text-xs hover:underline",
+                                      )}
+                                    >
+                                      View equipment <ArrowUpRight className="size-3.5" />
+                                    </Link>
+                                  )}
+                                </div>
+                                {payment?.status === "paid" && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setReceiptBooking(booking)}
+                                    className="mt-4 h-9 rounded-full border-violet-200 bg-violet-50/60 text-violet-700 hover:bg-violet-100"
+                                  >
+                                    <ReceiptText className="size-3.5" />
+                                    View / print payment receipt
+                                  </Button>
+                                )}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="grid justify-items-start gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6">
+                          <span
+                            className={cn("grid size-10 place-items-center rounded-xl", publicTone.iconTile)}
+                          >
+                            <PackageSearch className="size-5" />
+                          </span>
+                          <h3 className="text-base font-bold text-slate-900">
+                            {profile?.role === "customer"
+                              ? "No bookings yet"
+                              : "Your rentals are managed separately"}
+                          </h3>
+                          <p className={cn("max-w-sm", appSurfaces.body)}>
+                            {profile?.role === "customer"
+                              ? "Your paid and pending rentals will appear here."
+                              : "Open the management dashboard to manage your listings and rentals."}
+                          </p>
+                          <Link
+                            className={buttonVariants({
+                              className: cn(primaryButtonClass, "mt-2 w-auto"),
+                            })}
+                            href={profile?.role === "customer" ? "/equipment" : "/dashboard"}
+                          >
+                            {profile?.role === "customer" ? "Find equipment" : "Open dashboard"}
+                            <ArrowUpRight className="size-4" />
+                          </Link>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 )}
-              </section>
-              )}
 
-              {view !== "rentals" && view !== "profile" && (
-              <section className="account-card account-favorites">
-                <div className="account-card-heading account-bookings-heading">
-                  <div>
-                    <span className="eyebrow">SAVED FOR LATER</span>
-                    <h2>Favorite equipment</h2>
-                  </div>
-                  <span className="account-booking-count">{favorites.length}</span>
-                </div>
-                {favorites.length ? (
-                  <div className="account-booking-list">
-                    {favorites.map((favorite) => {
-                      const item = favorite.equipment;
-                      if (!item) return null;
-                      return (
-                        <article className="account-booking" key={favorite.favoriteId}>
-                          <div className="account-booking-top">
-                            <div>
-                              <h3>{item.name}</h3>
-                              <p>{item.category} · {item.location}</p>
-                            </div>
-                            <strong>{formatCurrency(item.price)}</strong>
+                {view !== "rentals" && view !== "profile" && (
+                  <Card
+                    className={cn(
+                      appSurfaces.card,
+                      "gap-0",
+                      view === "favorites" && "lg:col-span-2",
+                    )}
+                  >
+                    <div className={cn("h-1.5 w-full bg-linear-to-r", publicTone.panelAccent)} />
+                    <CardHeader className="p-6 pb-0 sm:p-7 sm:pb-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={cn("grid size-10 place-items-center rounded-xl", publicTone.iconTile)}
+                          >
+                            <Heart className="size-5" />
+                          </span>
+                          <div>
+                            <p className={appSurfaces.eyebrow}>Saved for later</p>
+                            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">
+                              Favorite equipment
+                            </h2>
                           </div>
-                          <div className="account-booking-bottom">
-                            <Link href={`/equipment/${item.id}`}>View details <span aria-hidden="true">↗</span></Link>
-                            <button type="button" onClick={() => removeFavorite(item.id)}>
-                              Remove favorite
-                            </button>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="account-empty-bookings">
-                    <span aria-hidden="true">♡</span>
-                    <h3>No favorites yet</h3>
-                    <p>Save equipment from its details page to find it here later.</p>
-                    <Link className="button button-dark" href="/equipment">Browse equipment <span aria-hidden="true">↗</span></Link>
-                  </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "grid size-9 shrink-0 place-items-center rounded-full text-xs font-bold",
+                            publicTone.softBadge,
+                          )}
+                        >
+                          {favorites.length}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6 pt-5 sm:p-7 sm:pt-6">
+                      {favorites.length ? (
+                        <div className="grid gap-3">
+                          {favorites.map((favorite) => {
+                            const item = favorite.equipment;
+                            if (!item) return null;
+                            return (
+                              <article
+                                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors hover:border-violet-200"
+                                key={favorite.favoriteId}
+                              >
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div className="flex items-start gap-3">
+                                    <span
+                                      className={cn(
+                                        "grid size-10 place-items-center rounded-xl",
+                                        publicTone.iconTile,
+                                      )}
+                                    >
+                                      <Wrench className="size-5" />
+                                    </span>
+                                    <div>
+                                      <h3 className="text-sm font-bold text-slate-900">{item.name}</h3>
+                                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                                        {item.category} · {item.location}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <strong className="text-sm font-bold text-slate-900">
+                                    {formatCurrency(item.price)}
+                                  </strong>
+                                </div>
+                                <Separator className="my-3 bg-slate-100" />
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Link
+                                    href={`/equipment/${item.id}`}
+                                    className={cn(
+                                      appSurfaces.link,
+                                      "inline-flex items-center gap-1 text-xs hover:underline",
+                                    )}
+                                  >
+                                    View details <ArrowUpRight className="size-3.5" />
+                                  </Link>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeFavorite(item.id)}
+                                    className="h-8 rounded-full px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                  >
+                                    Remove favorite
+                                  </Button>
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="grid justify-items-start gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6">
+                          <span
+                            className={cn("grid size-10 place-items-center rounded-xl", publicTone.iconTile)}
+                          >
+                            <Heart className="size-5" />
+                          </span>
+                          <h3 className="text-base font-bold text-slate-900">No favorites yet</h3>
+                          <p className={cn("max-w-sm", appSurfaces.body)}>
+                            Save equipment from its details page to find it here later.
+                          </p>
+                          <Link
+                            className={buttonVariants({
+                              className: cn(primaryButtonClass, "mt-2 w-auto"),
+                            })}
+                            href="/equipment"
+                          >
+                            Browse equipment <ArrowUpRight className="size-4" />
+                          </Link>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 )}
-              </section>
-              )}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </main>
-    {receiptBooking && (
-      <ReceiptDialog
-        booking={receiptBooking}
-        payment={payments.find((item) => String(item.bookingId) === receiptBooking.id)}
-        onClose={() => setReceiptBooking(null)}
-      />
-    )}
+          )}
+        </div>
+      </main>
+
+      {receiptBooking && (
+        <ReceiptDialog
+          booking={receiptBooking}
+          payment={payments.find((item) => String(item.bookingId) === receiptBooking.id)}
+          onClose={() => setReceiptBooking(null)}
+        />
+      )}
     </>
   );
 }
@@ -633,28 +1059,105 @@ function ReceiptDialog({
   onClose: () => void;
 }) {
   return (
-    <div className="receipt-overlay">
-      <button className="booking-backdrop" type="button" aria-label="Close receipt" onClick={onClose} />
-      <section className="receipt-card" role="dialog" aria-modal="true" aria-labelledby="receipt-title">
-        <p className="eyebrow">FIELDKIT / PAYMENT RECEIPT</p>
-        <h2 id="receipt-title">Payment receipt</h2>
-        <dl>
-          <div><dt>Receipt</dt><dd>{payment?.id || booking.id}</dd></div>
-          <div><dt>Equipment</dt><dd>{booking.equipmentName}</dd></div>
-          <div><dt>Rental dates</dt><dd>{formatRentalDate(booking.rentalStartDate)} – {formatRentalDate(booking.rentalEndDate)}</dd></div>
-          <div><dt>Quantity</dt><dd>{booking.quantity}</dd></div>
-          <div><dt>Amount paid</dt><dd>{formatCurrency(booking.totalAmount)}</dd></div>
-          <div><dt>Payment status</dt><dd>{payment?.status || booking.paymentStatus}</dd></div>
-          <div><dt>Paid at</dt><dd>{payment ? new Date(payment.createdAt).toLocaleString() : "Confirmed by Stripe"}</dd></div>
-          {payment?.paymentIntentId && typeof payment.paymentIntentId === "string" && (
-            <div><dt>Stripe reference</dt><dd>{payment.paymentIntentId}</dd></div>
-          )}
-        </dl>
-        <div className="receipt-actions">
-          <button className="account-signout" type="button" onClick={onClose}>Close</button>
-          <button className="button button-dark" type="button" onClick={() => window.print()}>Print receipt</button>
-        </div>
-      </section>
+    <div className="fixed inset-0 z-50 grid place-items-center p-4">
+      <button
+        className="absolute inset-0 cursor-default bg-slate-950/60 backdrop-blur-sm"
+        type="button"
+        aria-label="Close receipt"
+        onClick={onClose}
+      />
+      <Card
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="receipt-title"
+        className={cn(
+          appSurfaces.card,
+          "relative z-10 w-full max-w-lg gap-0 [--card-spacing:0px]",
+        )}
+      >
+        <div className={cn("h-1.5 w-full rounded-t-3xl bg-linear-to-r", publicTone.panelAccent)} />
+        <CardHeader className="relative p-6 pb-0 sm:p-7 sm:pb-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Close receipt"
+            onClick={onClose}
+            className="absolute top-5 right-5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          >
+            ×
+          </Button>
+          <p className={cn(appSurfaces.eyebrow, publicTone.accentText)}>Fieldkit / Payment receipt</p>
+          <h2 id="receipt-title" className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+            Payment receipt
+          </h2>
+          <p className={cn("mt-1", appSurfaces.body)}>A printable summary of your rental payment.</p>
+        </CardHeader>
+        <CardContent className="p-6 pt-5 sm:p-7 sm:pt-6">
+          <dl className="divide-y divide-slate-100 rounded-2xl border border-slate-200/70 bg-slate-50/60 px-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <dt className="text-xs font-medium text-slate-500">Receipt</dt>
+              <dd className="text-sm font-semibold text-slate-900">{payment?.id || booking.id}</dd>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <dt className="text-xs font-medium text-slate-500">Equipment</dt>
+              <dd className="text-sm font-semibold text-slate-900">{booking.equipmentName}</dd>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <dt className="text-xs font-medium text-slate-500">Rental dates</dt>
+              <dd className="text-sm font-semibold text-slate-900">
+                {formatRentalDate(booking.rentalStartDate)} – {formatRentalDate(booking.rentalEndDate)}
+              </dd>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <dt className="text-xs font-medium text-slate-500">Quantity</dt>
+              <dd className="text-sm font-semibold text-slate-900">{booking.quantity}</dd>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <dt className="text-xs font-medium text-slate-500">Amount paid</dt>
+              <dd className="text-sm font-bold text-slate-900">{formatCurrency(booking.totalAmount)}</dd>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <dt className="text-xs font-medium text-slate-500">Payment status</dt>
+              <dd className="text-sm font-semibold text-slate-900">
+                {payment?.status || booking.paymentStatus}
+              </dd>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <dt className="text-xs font-medium text-slate-500">Paid at</dt>
+              <dd className="text-sm font-semibold text-slate-900">
+                {payment ? new Date(payment.createdAt).toLocaleString() : "Confirmed by Stripe"}
+              </dd>
+            </div>
+            {payment?.paymentIntentId && typeof payment.paymentIntentId === "string" && (
+              <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                <dt className="text-xs font-medium text-slate-500">Stripe reference</dt>
+                <dd className="break-all text-sm font-semibold text-slate-900">
+                  {payment.paymentIntentId}
+                </dd>
+              </div>
+            )}
+          </dl>
+          <div className="mt-6 flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="h-10 rounded-full border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+            >
+              Close
+            </Button>
+            <Button
+              type="button"
+              onClick={() => window.print()}
+              className={cn(primaryButtonClass, "h-10 w-auto")}
+            >
+              <Printer className="size-4" />
+              Print receipt
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

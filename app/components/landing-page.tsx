@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -338,6 +341,11 @@ function CategoriesSection({ categories }: { categories: LandingCategory[] }) {
 
 function FeaturedSection({ items }: { items: EquipmentListing[] }) {
   const content = siteContent.featured;
+  const [isSignedIn, setIsSignedIn] = useState(false);
+
+  useEffect(() => {
+    setIsSignedIn(Boolean(window.localStorage.getItem("fieldkit_token")));
+  }, []);
 
   return (
     <section
@@ -432,7 +440,11 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
                         </p>
                       </div>
                       <Link
-                        href={`/equipment/${item.id}`}
+                        href={
+                          isSignedIn
+                            ? `/equipment/${item.id}`
+                            : `/login?next=${encodeURIComponent(`/equipment/${item.id}`)}`
+                        }
                         className={buttonVariants({
                           size: "sm",
                           className: "rounded-full bg-slate-900 px-4 text-xs text-white hover:bg-violet-700",

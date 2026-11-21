@@ -45,6 +45,7 @@ frontend root:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-oauth-client-id
+NEXT_PUBLIC_IMGBB_API_KEY=your-imgbb-api-key
 ```
 
 `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is optional and only enables Google sign-in. Use
@@ -115,6 +116,8 @@ approved listings when the equipment collection is empty.
 
 ## Deployment
 
-Live site: not deployed yet. For deployment, set `NEXT_PUBLIC_API_URL` to the
-public backend `/api` origin and configure the same Google client ID and Stripe
-keys used by the backend.
+Live site: add your deployed frontend URL here before submission.
+
+For deployment, set `NEXT_PUBLIC_API_URL` to the public backend `/api` origin and
+configure the same Google client ID, imgbb key, and Stripe/backend settings used
+by the API.

@@ -1,8 +1,27 @@
-import type { ReactNode } from "react";
-import type { LucideIcon } from "lucide-react";
+"use client";
+
+import { createContext, useContext, type ReactNode } from "react";
+import { TriangleAlert, type LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { appSurfaces, roleTones, type AppTone } from "../data/app-theme";
+
+/**
+ * Dashboard pages pass their role to DashboardShell, which shares the matching
+ * token set with these presentation components through context. The default
+ * keeps isolated renders (stories/tests) on a coherent tone.
+ */
+const AppToneContext = createContext<AppTone>(roleTones.admin);
+
+export function AppToneProvider({ tone, children }: { tone: AppTone; children: ReactNode }) {
+  return <AppToneContext.Provider value={tone}>{children}</AppToneContext.Provider>;
+}
+
+function useAppTone() {
+  return useContext(AppToneContext);
+}
 
 export function HeroBanner({
   eyebrow,
@@ -17,19 +36,37 @@ export function HeroBanner({
   action?: ReactNode;
   gradient: string;
 }) {
+  const tone = useAppTone();
+
   return (
     <section
-      className="relative overflow-hidden rounded-3xl px-6 py-8 text-white shadow-xl sm:px-8 sm:py-10"
-      style={{ background: gradient }}
+      className={cn(
+        "relative isolate overflow-hidden rounded-3xl px-6 py-8 text-white shadow-xl shadow-slate-900/10 sm:px-8 sm:py-10",
+        "bg-linear-to-r",
+        tone.banner,
+      )}
     >
       <span className="pointer-events-none absolute -top-20 -right-10 size-72 rounded-full border-[30px] border-white/10" />
       <span className="pointer-events-none absolute -bottom-28 right-32 size-56 rounded-full bg-white/10" />
-      <span className="pointer-events-none absolute -bottom-16 left-1/3 size-40 rounded-full border-[20px] border-white/5" />
+      <span
+        className="pointer-events-none absolute -top-24 -left-16 size-72 rounded-full opacity-25 blur-3xl"
+        style={{ background: gradient }}
+        aria-hidden="true"
+      />
       <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          <p className="text-[11px] font-bold tracking-[0.22em] text-white/75 uppercase">{eyebrow}</p>
-          <h2 className="mt-2 text-2xl leading-tight font-bold tracking-tight sm:text-3xl">{title}</h2>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/80">{description}</p>
+          <Badge
+            variant="outline"
+            className="h-auto rounded-full border-white/25 bg-white/15 px-3 py-1 text-[10px] font-bold tracking-[0.18em] text-white uppercase"
+          >
+            {eyebrow}
+          </Badge>
+          <h2 className="mt-3 text-2xl leading-tight font-bold tracking-tight [text-shadow:0_1px_2px_rgba(15,23,42,0.25)] sm:text-3xl">
+            {title}
+          </h2>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/90 [text-shadow:0_1px_2px_rgba(15,23,42,0.2)]">
+            {description}
+          </p>
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
@@ -52,11 +89,23 @@ export function StatCard({
   gradient: string;
   soft: string;
 }) {
+  const tone = useAppTone();
+
   return (
-    <Card className="relative overflow-hidden rounded-2xl border-slate-200/80 bg-white shadow-[0_12px_30px_-22px_rgba(15,23,42,0.5)]">
+    <Card
+      className={cn(
+        appSurfaces.card,
+        "relative gap-0 py-0 ring-0 transition-transform duration-200 hover:-translate-y-0.5",
+      )}
+    >
       <span
-        className="pointer-events-none absolute -top-10 -right-10 size-28 rounded-full"
+        className={cn("pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-linear-to-r", tone.panelAccent)}
+        aria-hidden="true"
+      />
+      <span
+        className="pointer-events-none absolute -top-10 -right-10 size-28 rounded-full opacity-70"
         style={{ background: soft }}
+        aria-hidden="true"
       />
       <CardContent className="relative p-5">
         <div className="flex items-start justify-between">
@@ -66,15 +115,16 @@ export function StatCard({
           >
             <Icon size={19} aria-hidden="true" />
           </span>
-          <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-400">
+          <Badge
+            variant="secondary"
+            className="h-auto rounded-full border-transparent bg-slate-100 px-2 py-1 text-[10px] font-semibold tracking-wide text-slate-400"
+          >
             LIVE
-          </span>
+          </Badge>
         </div>
-        <p className="mt-4 text-[11px] font-semibold tracking-[0.14em] text-slate-400 uppercase">
-          {label}
-        </p>
+        <p className={cn(appSurfaces.eyebrow, "mt-4")}>{label}</p>
         <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
-        {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
+        {hint ? <p className="mt-1 text-xs leading-relaxed text-slate-500">{hint}</p> : null}
       </CardContent>
     </Card>
   );
@@ -101,32 +151,31 @@ export function Panel({
   soft: string;
   accent: string;
 }) {
+  const tone = useAppTone();
+
   return (
-    <section
-      id={id}
-      className={cn(
-        "scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_30px_-24px_rgba(15,23,42,0.45)]",
-        className,
-      )}
-    >
+    <section id={id} className={cn(appSurfaces.card, "relative scroll-mt-24", className)}>
+      <span
+        className={cn("pointer-events-none absolute inset-x-0 top-0 h-0.5 rounded-t-3xl bg-linear-to-r", tone.panelAccent)}
+        aria-hidden="true"
+      />
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <div className="flex items-center gap-3">
           {Icon ? (
             <span
-              className="grid size-9 place-items-center rounded-xl"
-              style={{ background: soft, color: accent }}
+              className={cn("grid size-9 shrink-0 place-items-center rounded-xl ring-1 ring-slate-900/5", tone.iconTile)}
             >
               <Icon size={17} aria-hidden="true" />
             </span>
           ) : null}
-          <div>
+          <div className="min-w-0">
             <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-            {subtitle ? <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p> : null}
+            {subtitle ? <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{subtitle}</p> : null}
           </div>
         </div>
         {action}
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-5 text-slate-600">{children}</div>
     </section>
   );
 }
@@ -140,10 +189,11 @@ export function MiniBars({
   color: string;
   formatValue?: (value: number) => string;
 }) {
+  const tone = useAppTone();
   const maximum = Math.max(1, ...items.map((item) => item.value));
 
   if (items.length === 0) {
-    return <p className="py-10 text-center text-sm text-slate-400">No data available yet.</p>;
+    return <p className={cn(appSurfaces.body, "py-10 text-center")}>No data available yet.</p>;
   }
 
   return (
@@ -152,20 +202,26 @@ export function MiniBars({
         const height = item.value > 0 ? Math.max((item.value / maximum) * 100, 5) : 2;
         const value = formatValue ? formatValue(item.value) : new Intl.NumberFormat("en-BD").format(item.value);
         return (
-          <div className="group flex min-w-9 flex-1 flex-col items-center gap-2" key={item.label} title={`${item.label}: ${value}`}>
+          <div
+            className="group flex min-w-9 flex-1 flex-col items-center gap-2"
+            key={item.label}
+            title={`${item.label}: ${value}`}
+          >
             <span className="text-[9px] font-semibold text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">
               {value}
             </span>
             <div className="flex h-36 w-full items-end rounded-lg bg-slate-50">
               <div
-                className="w-full rounded-lg transition-all duration-500 group-hover:brightness-110"
-                style={{
-                  height: `${height}%`,
-                  background: `linear-gradient(180deg, ${color} 0%, ${color}99 100%)`,
-                }}
+                className={cn(
+                  "w-full rounded-lg transition-all duration-500 group-hover:brightness-110",
+                  "bg-linear-to-b",
+                  tone.bar,
+                )}
+                style={{ height: `${height}%` }}
+                aria-hidden="true"
               />
             </div>
-            <span className="text-[10px] font-medium text-slate-400">{item.label}</span>
+            <span className="text-[10px] font-medium text-slate-500">{item.label}</span>
           </div>
         );
       })}
@@ -190,8 +246,8 @@ export function StatusPill({ value }: { value: string }) {
   }
 
   return (
-    <Badge className={cn("gap-1.5 capitalize", className)} variant="secondary">
-      <span className="size-1.5 rounded-full bg-current" />
+    <Badge variant="secondary" className={cn("h-auto gap-1.5 border-transparent capitalize", className)}>
+      <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
       {value}
     </Badge>
   );
@@ -208,31 +264,53 @@ export function EmptyState({
   description: string;
   action?: ReactNode;
 }) {
+  const tone = useAppTone();
+
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-10 text-center">
-      <span className="grid size-12 place-items-center rounded-2xl bg-white text-slate-400 shadow-sm">
+    <div
+      className={cn(
+        appSurfaces.softCard,
+        "flex flex-col items-center justify-center border-dashed bg-slate-50/60 px-4 py-10 text-center",
+      )}
+    >
+      <span
+        className={cn("grid size-12 place-items-center rounded-2xl shadow-sm ring-1 ring-slate-200", tone.iconTile)}
+      >
         <Icon size={22} aria-hidden="true" />
       </span>
-      <h3 className="mt-3 text-sm font-semibold text-slate-800">{title}</h3>
-      <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">{description}</p>
+      <h3 className="mt-3 text-sm font-semibold text-slate-900">{title}</h3>
+      <p className={cn(appSurfaces.body, "mt-1 max-w-sm text-xs")}>{description}</p>
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
 }
 
 export function PanelLoading({ label = "Loading data..." }: { label?: string }) {
+  const tone = useAppTone();
+
   return (
-    <div className="flex items-center gap-3 py-8 text-sm text-slate-500" role="status">
-      <span className="size-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" />
-      {label}
+    <div className="flex flex-col gap-3 py-6" role="status">
+      <div className="flex items-center gap-3 text-sm text-slate-600">
+        <span
+          className="size-4 shrink-0 animate-spin rounded-full border-2 border-slate-200 border-t-slate-700"
+          aria-hidden="true"
+        />
+        <span className={cn("font-medium", tone.accentText)}>{label}</span>
+      </div>
+      <Skeleton className="h-3 w-2/3 rounded-full bg-slate-100" />
+      <Skeleton className="h-3 w-1/2 rounded-full bg-slate-100" />
     </div>
   );
 }
 
 export function PanelError({ message }: { message: string }) {
   return (
-    <p className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
-      {message}
-    </p>
+    <div
+      className="flex items-start gap-2 rounded-xl border border-rose-100 bg-rose-50/80 px-4 py-3 text-sm leading-relaxed text-rose-700"
+      role="alert"
+    >
+      <TriangleAlert size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+      <p>{message}</p>
+    </div>
   );
 }

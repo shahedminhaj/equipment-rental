@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { TriangleAlert } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { appSurfaces, publicTone } from "./data/app-theme";
 
 export default function ErrorPage({
   error,
@@ -16,37 +20,72 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <main className="relative flex min-h-[70vh] items-center justify-center overflow-hidden px-6 py-24">
-      <div className="pointer-events-none absolute -top-32 right-1/4 h-96 w-96 rounded-full bg-[var(--lime)] opacity-25 blur-3xl" />
-      <div className="relative w-full max-w-xl rounded-[2rem] border border-[var(--line)] bg-[color:var(--card)] p-10 text-center shadow-[0_24px_80px_rgba(32,35,28,0.08)]">
-        <span className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fdece6] text-3xl text-[#9a4a2f]">
-          !
-        </span>
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--olive)]">
-          Something went wrong
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--ink)]">
-          We couldn&apos;t load this page
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-          The request may have timed out or the service is temporarily unavailable. Please try
-          again, or head back to the catalog.
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Button onClick={reset} className="rounded-full">
-            Try again
-          </Button>
-          <Link
-            className={buttonVariants({ variant: "outline", className: "rounded-full" })}
-            href="/equipment"
+    <main
+      className={cn(
+        appSurfaces.page,
+        "relative isolate flex min-h-[70vh] items-center justify-center overflow-hidden px-6 py-24",
+      )}
+    >
+      <div aria-hidden="true" className={appSurfaces.pageGlow} />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-32 -bottom-40 size-[26rem] rounded-full bg-fuchsia-200/50 blur-[120px]"
+      />
+      <Card
+        className={cn(
+          appSurfaces.card,
+          "relative w-full max-w-xl gap-0 overflow-hidden text-center",
+        )}
+      >
+        <div
+          aria-hidden="true"
+          className={cn("h-1 w-full bg-linear-to-r", publicTone.gradient)}
+        />
+        <CardContent className="px-8 pt-9 pb-10 sm:px-12">
+          <span
+            className={cn(
+              "mx-auto mb-6 grid size-16 place-items-center rounded-2xl bg-linear-to-br text-white shadow-lg",
+              publicTone.gradient,
+            )}
           >
-            Browse equipment
-          </Link>
-        </div>
-        {error.digest ? (
-          <p className="mt-6 text-xs text-[var(--muted)]">Reference: {error.digest}</p>
-        ) : null}
-      </div>
+            <TriangleAlert className="size-7" aria-hidden="true" />
+          </span>
+          <p className={cn(appSurfaces.eyebrow, "text-violet-600")}>Something went wrong</p>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+            We couldn&apos;t load this page
+          </h1>
+          <p className={cn(appSurfaces.body, "mx-auto mt-4 max-w-md")}>
+            The request may have timed out or the service is temporarily unavailable. Please try
+            again, or head back to the catalog.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Button
+              className={cn(
+                "h-10 rounded-full bg-linear-to-r px-6 text-white shadow-lg shadow-fuchsia-500/20",
+                "hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+                publicTone.gradient,
+              )}
+              type="button"
+              onClick={reset}
+            >
+              Try again
+            </Button>
+            <Link
+              className={buttonVariants({
+                variant: "outline",
+                className:
+                  "h-10 rounded-full border-slate-200 bg-white px-6 text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900",
+              })}
+              href="/equipment"
+            >
+              Browse equipment
+            </Link>
+          </div>
+          {error.digest ? (
+            <p className="mt-6 text-xs text-slate-400">Reference: {error.digest}</p>
+          ) : null}
+        </CardContent>
+      </Card>
     </main>
   );
 }

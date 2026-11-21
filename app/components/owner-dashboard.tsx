@@ -10,11 +10,19 @@ import {
   Package,
   Plus,
   TrendingUp,
+  Users,
   Wallet,
   X,
 } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { appSurfaces, roleTones } from "../data/app-theme";
 import { apiRequest, formatCurrency, type EquipmentListing } from "../lib/api";
+import type { AuthUser } from "../lib/auth";
 import { DashboardShell } from "./dashboard-shell";
 import {
   EmptyState,
@@ -37,6 +45,7 @@ type OwnerBooking = {
   paymentStatus: string;
   rentalStartDate: string;
   rentalEndDate: string;
+  quantity?: number;
   totalAmount: number;
   customer?: { name?: string; email?: string } | null;
 };
@@ -46,6 +55,12 @@ type OwnerAnalytics = {
   totalEarnings: number;
   monthlyEarnings: { month: string; earnings: number }[];
 };
+
+const tone = roleTones.owner;
+// The shared UI kit reads tone from context; these two props still render inline CSS.
+const statGradient = "linear-gradient(135deg, #f59e0b, #f97316, #f43f5e)";
+const statSoft = "#fef3c7";
+const heroGlow = "linear-gradient(135deg, #f59e0b, #ea580c, #db2777)";
 
 const monthFormatter = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" });
 function monthLabel(month: string) {
@@ -64,7 +79,23 @@ export function OwnerDashboard() {
   const [dataError, setDataError] = useState("");
   const [busyId, setBusyId] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [listingImage, setListingImage] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [profileName, setProfileName] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileAddress, setProfileAddress] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || "");
+      setProfilePhoto(user.photo || "");
+      setProfilePhone((user as AuthUser & { phone?: string }).phone || "");
+      setProfileAddress((user as AuthUser & { address?: string }).address || "");
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!token) return;
@@ -134,6 +165,64 @@ export function OwnerDashboard() {
     }
   }
 
+  async function handleListingImageUpload(file: File | null) {
+    if (!file) return;
+    const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+    if (!apiKey) {
+      notify("Image upload is not configured. Please provide a direct image URL.", "error");
+      return;
+    }
+    setIsUploadingImage(true);
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: "POST",
+        body: form,
+      });
+      const payload = (await response.json()) as {
+        success?: boolean;
+        data?: { display_url?: string; url?: string };
+        error?: { message?: string };
+      };
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error?.message || "Could not upload image");
+      }
+      const url = payload.data?.display_url || payload.data?.url || "";
+      if (!url) throw new Error("Image upload did not return a URL");
+      setListingImage(url);
+      notify("Equipment image uploaded successfully.");
+    } catch (uploadError) {
+      notify(uploadError instanceof Error ? uploadError.message : "Could not upload image", "error");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
+  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token) return;
+    setIsSavingProfile(true);
+    try {
+      await apiRequest("/profile", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: profileName.trim(),
+          photo: profilePhoto.trim(),
+          phone: profilePhone.trim(),
+          address: profileAddress.trim(),
+        }),
+      });
+      notify("Profile updated.");
+      refreshSession();
+    } catch (saveError) {
+      notify(saveError instanceof Error ? saveError.message : "Could not update profile", "error");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  }
+
   async function createListing(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!token || busyId) return;
@@ -160,6 +249,7 @@ export function OwnerDashboard() {
       });
       notify("Listing submitted. It will appear after admin approval.");
       event.currentTarget.reset();
+      setListingImage("");
       setShowCreateForm(false);
       setRefreshKey((key) => key + 1);
     } catch (createError) {
@@ -174,38 +264,35 @@ export function OwnerDashboard() {
   const paidBookings = bookings.filter((booking) => booking.paymentStatus === "paid");
   const pendingBookings = paidBookings.filter((booking) => booking.bookingStatus === "pending");
 
+  const statStyle = { gradient: statGradient, soft: statSoft };
   const stats = [
     {
       label: "Listed equipment",
       value: analytics?.totalListedEquipment ?? listings.length,
       hint: "Items in your inventory",
       icon: Package,
-      gradient: "linear-gradient(135deg, #f97316, #ea580c)",
-      soft: "#fff7ed",
+      ...statStyle,
     },
     {
       label: "Completed rentals",
       value: analytics?.completedRentals ?? 0,
       hint: "Successful handovers",
       icon: BadgeCheck,
-      gradient: "linear-gradient(135deg, #0ea5e9, #2563eb)",
-      soft: "#eff6ff",
+      ...statStyle,
     },
     {
       label: "Paid earnings",
       value: formatCurrency(analytics?.totalEarnings ?? 0),
       hint: "From confirmed rentals",
       icon: Wallet,
-      gradient: "linear-gradient(135deg, #10b981, #059669)",
-      soft: "#ecfdf5",
+      ...statStyle,
     },
     {
       label: "New requests",
       value: pendingBookings.length,
       hint: "Waiting for your answer",
       icon: CalendarDays,
-      gradient: "linear-gradient(135deg, #f43f5e, #e11d48)",
-      soft: "#fff1f2",
+      ...statStyle,
     },
   ];
 
@@ -221,70 +308,98 @@ export function OwnerDashboard() {
       onRetry={refreshSession}
     >
       <HeroBanner
-        gradient="linear-gradient(120deg, #ea580c 0%, #f97316 50%, #db2777 100%)"
+        gradient={heroGlow}
         eyebrow="OWNER STUDIO"
         title={`Good to see you, ${user?.name?.split(" ")[0] || "owner"}.`}
         description="Your gear is working for you. Keep your listings fresh and respond to requests quickly to earn more."
         action={
-          <button
+          <Button
             type="button"
             onClick={() => setShowCreateForm((current) => !current)}
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-orange-600 shadow-lg transition-transform hover:-translate-y-0.5"
+            className={`h-9 rounded-xl bg-white px-4 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 hover:bg-white ${tone.accentText}`}
           >
             {showCreateForm ? <X size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
             {showCreateForm ? "Close form" : "List new equipment"}
-          </button>
+          </Button>
         }
       />
 
       {dataError ? <PanelError message={dataError} /> : null}
 
       {showCreateForm ? (
-        <Panel title="Create a listing" subtitle="New listings go live after admin approval" icon={Plus} soft="#fff7ed" accent="#ea580c">
+        <Panel title="Create a listing" subtitle="New listings go live after admin approval" icon={Plus} soft={tone.iconTile} accent={tone.panelAccent}>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={createListing}>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Equipment name
-              <input name="name" required maxLength={200} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
-            </label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+              <Input className="h-9" name="name" required maxLength={200} placeholder="e.g. Cordless drill kit" />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Category
-              <input name="category" required maxLength={100} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
-            </label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+              <Input className="h-9" name="category" required maxLength={100} placeholder="e.g. Construction" />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Location
-              <input name="location" required maxLength={200} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
-            </label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">
-              Image URL
-              <input name="image" type="url" required className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
-            </label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+              <Input className="h-9" name="location" required maxLength={200} placeholder="e.g. Dhaka" />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
+              Equipment Image (URL or imgbb upload)
+              <Input
+                className="h-9"
+                name="image"
+                type="url"
+                required
+                placeholder="https://..."
+                value={listingImage}
+                onChange={(event) => setListingImage(event.target.value)}
+              />
+              <Input
+                className="h-auto py-1.5 text-xs"
+                type="file"
+                accept="image/*"
+                onChange={(event) => void handleListingImageUpload(event.target.files?.[0] || null)}
+              />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Price per period (৳)
-              <input name="price" type="number" min="1" required className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
-            </label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+              <Input className="h-9" name="price" type="number" min="1" required />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Rental type
-              <select name="rentalType" defaultValue="Daily" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100">
+              <select
+                name="rentalType"
+                defaultValue="Daily"
+                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none transition-colors focus:border-slate-300 focus:ring-2 focus:ring-slate-200"
+              >
                 <option>Daily</option>
                 <option>Weekly</option>
                 <option>Monthly</option>
               </select>
-            </label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Available quantity
-              <input name="availableQuantity" type="number" min="0" defaultValue="1" required className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
-            </label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+              <Input className="h-9" name="availableQuantity" type="number" min="0" defaultValue="1" required />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Condition
-              <input name="condition" maxLength={200} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
-            </label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600 md:col-span-2">
+              <Input className="h-9" name="condition" maxLength={200} placeholder="e.g. Excellent" />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600 md:col-span-2">
               Description
-              <textarea name="description" rows={3} maxLength={5000} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
-            </label>
+              <textarea
+                name="description"
+                rows={3}
+                maxLength={5000}
+                className="w-full rounded-lg border border-slate-200 bg-transparent px-2.5 py-2 text-sm text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-200"
+              />
+            </Label>
             <div className="md:col-span-2">
-              <Button type="submit" disabled={busyId === "new-listing"} className="bg-orange-600 text-white hover:bg-orange-700">
-                {busyId === "new-listing" ? "Submitting..." : "Submit for approval"}
+              <Separator className="mb-4 bg-slate-200/80" />
+              <Button
+                type="submit"
+                disabled={busyId === "new-listing" || isUploadingImage}
+                className={`bg-linear-to-r text-white shadow-sm hover:brightness-110 ${tone.gradient}`}
+              >
+                {isUploadingImage ? "Uploading image..." : busyId === "new-listing" ? "Submitting..." : "Submit for approval"}
               </Button>
             </div>
           </form>
@@ -307,12 +422,12 @@ export function OwnerDashboard() {
               title="Earnings overview"
               subtitle="Your monthly rental income"
               icon={TrendingUp}
-              soft="#fff7ed"
-              accent="#ea580c"
+              soft={tone.iconTile}
+              accent={tone.panelAccent}
               className="xl:col-span-2"
             >
               <MiniBars
-                color="#f97316"
+                color={tone.bar}
                 formatValue={(value) => formatCurrency(value)}
                 items={(analytics?.monthlyEarnings ?? []).map(({ month, earnings }) => ({
                   label: monthLabel(month),
@@ -320,22 +435,22 @@ export function OwnerDashboard() {
                 }))}
               />
             </Panel>
-            <Panel title="Business tips" subtitle="Small moves, bigger returns" icon={CircleDollarSign} soft="#ecfdf5" accent="#059669">
-              <ul className="space-y-3 text-sm text-slate-600">
+            <Panel title="Business tips" subtitle="Small moves, bigger returns" icon={CircleDollarSign} soft={tone.iconTile} accent={tone.panelAccent}>
+              <ul className="space-y-3 text-sm leading-relaxed text-slate-600">
                 {[
                   "Approved listings appear in marketplace search instantly.",
                   "Responding to requests the same day improves booking rates.",
                   "Keep prices competitive in your category to stay booked.",
                 ].map((tip) => (
                   <li className="flex gap-2.5" key={tip}>
-                    <span className="mt-1 size-1.5 shrink-0 rounded-full bg-emerald-500" />
+                    <span className={`mt-1.5 size-1.5 shrink-0 rounded-full bg-linear-to-r ${tone.gradient}`} />
                     {tip}
                   </li>
                 ))}
               </ul>
               <Link
                 href="/equipment"
-                className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700"
+                className={`mt-5 inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:brightness-90 ${tone.accentText}`}
               >
                 See how others list gear <ArrowUpRight size={14} aria-hidden="true" />
               </Link>
@@ -347,8 +462,8 @@ export function OwnerDashboard() {
             title="My listings"
             subtitle="Edit prices, quantities, and remove outdated equipment"
             icon={Package}
-            soft="#fff7ed"
-            accent="#ea580c"
+            soft={tone.iconTile}
+            accent={tone.panelAccent}
           >
             {listings.length === 0 ? (
               <EmptyState
@@ -356,7 +471,11 @@ export function OwnerDashboard() {
                 title="No listings yet"
                 description="Add your first piece of equipment to start earning from it."
                 action={
-                  <Button type="button" onClick={() => setShowCreateForm(true)} className="bg-orange-600 text-white hover:bg-orange-700">
+                  <Button
+                    type="button"
+                    onClick={() => setShowCreateForm(true)}
+                    className={`bg-linear-to-r text-white shadow-sm hover:brightness-110 ${tone.gradient}`}
+                  >
                     <Plus size={15} aria-hidden="true" /> List equipment
                   </Button>
                 }
@@ -369,7 +488,7 @@ export function OwnerDashboard() {
                     quantity: String(item.availableQuantity),
                   };
                   return (
-                    <article key={item.id} className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 md:flex-row md:items-center md:justify-between">
+                    <article key={item.id} className={`flex flex-col gap-4 p-4 transition-colors hover:border-slate-300 md:flex-row md:items-center md:justify-between ${appSurfaces.softCard}`}>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-sm font-semibold text-slate-900">{item.name}</h3>
@@ -397,9 +516,9 @@ export function OwnerDashboard() {
                           );
                         }}
                       >
-                        <label className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                        <Label className="flex flex-col items-start gap-1 text-[10px] font-bold tracking-[0.14em] text-slate-400 uppercase">
                           Price
-                          <input
+                          <Input
                             type="number"
                             min="1"
                             required
@@ -410,12 +529,12 @@ export function OwnerDashboard() {
                                 [item.id]: { ...values, price: event.target.value },
                               }))
                             }
-                            className="mt-1 w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-800"
+                            className="h-8 w-24 text-sm"
                           />
-                        </label>
-                        <label className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                        </Label>
+                        <Label className="flex flex-col items-start gap-1 text-[10px] font-bold tracking-[0.14em] text-slate-400 uppercase">
                           Qty
-                          <input
+                          <Input
                             type="number"
                             min="0"
                             required
@@ -426,9 +545,9 @@ export function OwnerDashboard() {
                                 [item.id]: { ...values, quantity: event.target.value },
                               }))
                             }
-                            className="mt-1 w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-800"
+                            className="h-8 w-16 text-sm"
                           />
-                        </label>
+                        </Label>
                         <Button type="submit" size="sm" disabled={busyId === item.id} className="bg-slate-900 text-white hover:bg-slate-800">
                           Save
                         </Button>
@@ -463,8 +582,13 @@ export function OwnerDashboard() {
             title="Rental requests"
             subtitle="Paid bookings for your equipment"
             icon={CalendarDays}
-            soft="#eff6ff"
-            accent="#2563eb"
+            soft={tone.iconTile}
+            accent={tone.panelAccent}
+            action={
+              <Badge variant="secondary" className={`h-auto rounded-full px-3 py-1 ${tone.softBadge}`}>
+                {pendingBookings.length} new
+              </Badge>
+            }
           >
             {paidBookings.length === 0 ? (
               <EmptyState
@@ -475,27 +599,38 @@ export function OwnerDashboard() {
             ) : (
               <div className="space-y-3">
                 {paidBookings.map((booking) => (
-                  <article key={booking.id} className="rounded-xl border border-slate-200 p-4">
+                  <article key={booking.id} className={`p-4 transition-colors hover:border-slate-300 ${appSurfaces.softCard}`}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-sm font-semibold text-slate-900">{booking.equipmentName}</h3>
                           <StatusPill value={booking.bookingStatus} />
+                          <StatusPill value={booking.paymentStatus} />
                         </div>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {booking.rentalStartDate} → {booking.rentalEndDate} ·{" "}
-                          {booking.customer?.name || booking.customer?.email || "Customer"}
-                        </p>
+                        <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                          <Avatar size="sm" className={tone.softBadge}>
+                            <AvatarFallback className={`bg-transparent text-[9px] font-bold ${tone.accentText}`}>
+                              {(booking.customer?.name || booking.customer?.email || "Customer")
+                                .split(/[\s@.]+/)
+                                .filter(Boolean)
+                                .slice(0, 2)
+                                .map((part) => part[0]?.toUpperCase())
+                                .join("") || "C"}
+                            </AvatarFallback>
+                          </Avatar>
+                          {booking.rentalStartDate} to {booking.rentalEndDate} · {booking.customer?.name || booking.customer?.email || "Customer"}
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">Quantity: {booking.quantity ?? 1}</p>
                       </div>
                       <strong className="text-sm text-slate-900">{formatCurrency(booking.totalAmount)}</strong>
                     </div>
                     {booking.bookingStatus === "pending" ? (
-                      <div className="mt-4 flex gap-2">
+                      <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4">
                         <Button
                           type="button"
                           size="sm"
                           disabled={busyId === booking.id}
-                          className="bg-emerald-600 text-white hover:bg-emerald-700"
+                          className={`bg-linear-to-r text-white shadow-sm hover:brightness-110 ${tone.gradient}`}
                           onClick={() =>
                             updateRequest(
                               `/bookings/${booking.id}/status`,
@@ -530,6 +665,43 @@ export function OwnerDashboard() {
                 ))}
               </div>
             )}
+          </Panel>
+
+          <Panel
+            id="profile"
+            title="My profile"
+            subtitle="Update your owner profile information"
+            icon={Users}
+            soft={tone.iconTile}
+            accent={tone.panelAccent}
+          >
+            <form className="grid max-w-2xl gap-4 md:grid-cols-2" onSubmit={saveProfile}>
+              <div className="grid gap-2">
+                <Label htmlFor="owner-name" className="text-xs font-semibold text-slate-700">Name</Label>
+                <Input id="owner-name" value={profileName} onChange={(e) => setProfileName(e.target.value)} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="owner-email" className="text-xs font-semibold text-slate-700">Email</Label>
+                <Input id="owner-email" value={user?.email || ""} readOnly />
+              </div>
+              <div className="grid gap-2 md:col-span-2">
+                <Label htmlFor="owner-photo" className="text-xs font-semibold text-slate-700">Profile image URL</Label>
+                <Input id="owner-photo" value={profilePhoto} onChange={(e) => setProfilePhoto(e.target.value)} placeholder="https://..." />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="owner-phone" className="text-xs font-semibold text-slate-700">Phone number</Label>
+                <Input id="owner-phone" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="owner-address" className="text-xs font-semibold text-slate-700">Address</Label>
+                <Input id="owner-address" value={profileAddress} onChange={(e) => setProfileAddress(e.target.value)} />
+              </div>
+              <div className="md:col-span-2">
+                <Button type="submit" disabled={isSavingProfile} className={`bg-linear-to-r text-white ${tone.gradient}`}>
+                  {isSavingProfile ? "Saving..." : "Save profile"}
+                </Button>
+              </div>
+            </form>
           </Panel>
         </>
       )}
