@@ -132,7 +132,7 @@ export function ManagementDashboard({
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader authPage={!user} />
       <main className="account-page">
         <div className="account-page-heading">
           <div>

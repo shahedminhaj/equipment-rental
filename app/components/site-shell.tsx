@@ -33,7 +33,7 @@ function BrandMark() {
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ authPage = false }: { authPage?: boolean }) {
   const router = useRouter();
   const { notify } = useToast();
   const [role, setRole] = useState<AuthUser["role"] | null>(null);
@@ -76,31 +76,41 @@ export function SiteHeader() {
       <header className="site-header" id="top">
         <div className="nav-shell">
           <BrandMark />
-          <nav className="main-nav" aria-label="Main navigation">
-            <Link href="/">Home</Link>
-            <Link href="/equipment">All equipment</Link>
-            <Link href="/#categories">Categories</Link>
-            <Link href="/#how-it-works">How it works</Link>
-            <Link href="/#reviews">Our community</Link>
-            {role === "customer" && <Link href="/account">My rentals</Link>}
-          </nav>
-          {role ? (
+          {authPage ? (
             <div className="nav-session">
-              <Badge variant="secondary">{roleLabel}</Badge>
-              <Link className="nav-session-link" href={dashboardPath}>
-                {role === "admin" ? "Admin dashboard" : role === "owner" ? "Owner dashboard" : "My dashboard"}
+              <Link className="nav-session-link" href="/">
+                ← Back to home
               </Link>
-              <Button type="button" variant="ghost" size="sm" onClick={signOut}>
-                Sign out
-              </Button>
             </div>
           ) : (
-            <div className="nav-auth-actions">
-              <Link className="nav-auth-link" href="/signup">Create account</Link>
-              <Link className="button button-dark nav-cta" href="/login">
-                Sign in <span aria-hidden="true">↗</span>
-              </Link>
-            </div>
+            <>
+              <nav className="main-nav" aria-label="Main navigation">
+                <Link href="/">Home</Link>
+                <Link href="/equipment">All equipment</Link>
+                <Link href="/#categories">Categories</Link>
+                <Link href="/#how-it-works">How it works</Link>
+                <Link href="/#reviews">Our community</Link>
+                {role === "customer" && <Link href="/account">My rentals</Link>}
+              </nav>
+              {role ? (
+                <div className="nav-session">
+                  <Badge variant="secondary">{roleLabel}</Badge>
+                  <Link className="nav-session-link" href={dashboardPath}>
+                    {role === "admin" ? "Admin dashboard" : role === "owner" ? "Owner dashboard" : "My dashboard"}
+                  </Link>
+                  <Button type="button" variant="ghost" size="sm" onClick={signOut}>
+                    Sign out
+                  </Button>
+                </div>
+              ) : (
+                <div className="nav-auth-actions">
+                  <Link className="nav-auth-link" href="/signup">Create account</Link>
+                  <Link className="button button-dark nav-cta" href="/login">
+                    Sign in <span aria-hidden="true">↗</span>
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </div>
       </header>

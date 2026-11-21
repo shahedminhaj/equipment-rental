@@ -9,7 +9,7 @@ export function LoginPanel() {
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader authPage />
       <main className="account-page signup-page">
         <AccountAccess
           initialMode="login"

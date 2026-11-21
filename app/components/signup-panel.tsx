@@ -8,7 +8,7 @@ export function SignupPanel() {
   const router = useRouter();
   return (
     <>
-      <SiteHeader />
+      <SiteHeader authPage />
       <main className="account-page signup-page">
         <AccountAccess
           initialMode="register"
