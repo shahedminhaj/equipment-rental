@@ -20,22 +20,22 @@
   --card-foreground: var(--ink);
   --popover: #fcfbf7;
   --popover-foreground: var(--ink);
-  --primary: var(--olive-dark);
+  --primary: #6d28d9;
   --primary-foreground: #fff;
-  --secondary: #e8ebdf;
-  --secondary-foreground: var(--olive-dark);
+  --secondary: #f3e8ff;
+  --secondary-foreground: #5b21b6;
   --muted-foreground: #74776d;
-  --accent: #edf0e4;
-  --accent-foreground: var(--ink);
+  --accent: #fce7f3;
+  --accent-foreground: #9d174d;
   --destructive: oklch(0.577 0.245 27.325);
   --border: var(--line);
   --input: #dedfd6;
-  --ring: var(--olive);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --ring: #8b5cf6;
+  --chart-1: #8b5cf6;
+  --chart-2: #ec4899;
+  --chart-3: #0ea5e9;
+  --chart-4: #10b981;
+  --chart-5: #f59e0b;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -4489,5 +4489,43 @@ a {
 @media (max-width: 520px) {
   .management-segments {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Landing page utilities ---------- */
+.landing-page {
+  background: #fff;
+}
+
+.landing-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 12%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 12%) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+.gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.float-slow {
+  animation: landing-float 6s ease-in-out infinite;
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-slow {
+    animation: none;
   }
 }

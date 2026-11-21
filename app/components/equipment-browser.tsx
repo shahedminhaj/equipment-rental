@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 
@@ -19,11 +20,12 @@ type CatalogResponse = {
 type Category = { name: string; count: number };
 
 export function EquipmentBrowser() {
+  const searchParams = useSearchParams();
   const [listings, setListings] = useState<EquipmentListing[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(() => searchParams?.get("category") ?? "");
   const [rentalType, setRentalType] = useState("");
   const [availability, setAvailability] = useState("");
   const [minimumPrice, setMinimumPrice] = useState("");
