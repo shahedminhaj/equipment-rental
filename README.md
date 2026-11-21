@@ -51,6 +51,20 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-oauth-client-id
 the same client ID in the backend `.env`. Keep database, JWT, admin, and Stripe
 secrets in the backend `.env`; never expose them in a `NEXT_PUBLIC_` variable.
 
+Google sign-in also requires the page origin to be registered on **that exact
+OAuth client** in Google Cloud Console → APIs & Services → Credentials → OAuth
+2.0 Client IDs → **Authorized JavaScript origins**:
+
+```
+http://localhost:3000
+http://localhost:3001
+```
+
+Add both if you switch between `next start` and `next dev`. `localhost` and
+`127.0.0.1` are different origins, and a missing entry produces
+`Error 400: origin_mismatch`. Authorized redirect URIs are not needed for the
+Google Identity Services button.
+
 ### Admin login
 
 The backend creates or promotes the account configured by `ADMIN_EMAIL` and

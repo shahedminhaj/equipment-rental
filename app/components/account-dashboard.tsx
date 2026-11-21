@@ -173,26 +173,8 @@ export function AccountDashboard({
         },
       );
       saveAuth(response.token, response.user);
-      if (response.user.role !== "customer") {
-        router.replace(dashboardHref(response.user.role));
-        return;
-      }
-      setToken(response.token);
-      setProfile(response.user);
-      setName(response.user.name);
-      setEmail(response.user.email);
-      setIsAuthenticated(true);
-      setIsLoading(true);
-
-      const account = await loadAccountData(response.token);
-      setProfile(account.user);
-      setName(account.user.name);
-      setPhone(account.user.phone || "");
-      setAddress(account.user.address || "");
-      setBookings(account.bookings);
-      setPayments(account.payments);
-      setFavorites(account.favorites);
-      setAccountDataLoaded(true);
+      router.replace(dashboardHref(response.user.role));
+      return;
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Could not sign in.");
     } finally {
@@ -213,26 +195,8 @@ export function AccountDashboard({
         body: JSON.stringify({ credential }),
       });
       saveAuth(response.token, response.user);
-      if (response.user.role !== "customer") {
-        router.replace(dashboardHref(response.user.role));
-        return;
-      }
-      setToken(response.token);
-      setProfile(response.user);
-      setName(response.user.name);
-      setEmail(response.user.email);
-      setIsAuthenticated(true);
-      setIsLoading(true);
-
-      const account = await loadAccountData(response.token);
-      setProfile(account.user);
-      setName(account.user.name);
-      setPhone(account.user.phone || "");
-      setAddress(account.user.address || "");
-      setBookings(account.bookings);
-      setPayments(account.payments);
-      setFavorites(account.favorites);
-      setAccountDataLoaded(true);
+      router.replace(dashboardHref(response.user.role));
+      return;
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Google sign-in failed.");
     } finally {

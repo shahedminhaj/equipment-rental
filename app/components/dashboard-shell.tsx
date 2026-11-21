@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from "react";
 import {
   Bell,
   CalendarDays,
@@ -32,6 +39,7 @@ import type { AuthUser } from "../lib/auth";
 import { dashboardHref, type DashboardRole } from "../lib/dashboard-routes";
 
 type NavItem = { label: string; href: string; icon: LucideIcon; hint?: string };
+type SearchItem = NavItem & { group: "Workspace" | "Quick links" };
 
 type Theme = {
   label: string;
@@ -120,9 +128,88 @@ export function DashboardShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeHref, setActiveHref] = useState(dashboardHref(role));
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeResult, setActiveResult] = useState(0);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const theme = themes[role];
+
+  const searchItems = useMemo<SearchItem[]>(() => {
+    const workspaceItems: SearchItem[] = theme.nav.map((item) => ({ ...item, group: "Workspace" }));
+    const quickLinks: SearchItem[] = [
+      { label: "Account settings", href: "/account", icon: Settings, group: "Quick links" },
+    ];
+    return [
+      ...workspaceItems,
+      ...quickLinks.filter((link) => !workspaceItems.some((item) => item.href === link.href)),
+    ];
+  }, [theme]);
+
+  const results = useMemo(() => {
+    const term = searchQuery.trim().toLowerCase();
+    if (!term) return searchItems.slice(0, 6);
+    return searchItems
+      .filter((item) =>
+        [item.label, item.hint, item.href].some((value) => value?.toLowerCase().includes(term)),
+      )
+      .slice(0, 6);
+  }, [searchItems, searchQuery]);
+
+  useEffect(() => {
+    function focusSearch(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        setSearchOpen(true);
+      }
+    }
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setSearchOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", focusSearch);
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => {
+      window.removeEventListener("keydown", focusSearch);
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+    };
+  }, []);
+
+  function goToResult(item: SearchItem) {
+    setSearchOpen(false);
+    setSearchQuery("");
+    setActiveResult(0);
+    setActiveHref(item.href);
+    if (item.href.startsWith("#")) {
+      document.getElementById(item.href.slice(1))?.scrollIntoView({ behavior: "smooth" });
+    }
+    router.push(item.href);
+  }
+
+  function handleSearchKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSearchOpen(true);
+      setActiveResult((index) => (results.length ? (index + 1) % results.length : 0));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSearchOpen(true);
+      setActiveResult((index) => (results.length ? (index - 1 + results.length) % results.length : 0));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const selected = results[activeResult];
+      if (selected) goToResult(selected);
+    } else if (event.key === "Escape") {
+      setSearchOpen(false);
+      searchInputRef.current?.blur();
+    }
+  }
 
   const sidebar = (
     <div
@@ -262,13 +349,90 @@ export function DashboardShell({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-xs text-slate-400 xl:flex">
-              <Search size={15} aria-hidden="true" />
-              <span>Search workspace</span>
-              <kbd className="ml-6 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-400">
-                ⌘K
-              </kbd>
+            <div ref={searchContainerRef} className="relative hidden xl:block">
+              <div
+                className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors ${
+                  searchOpen
+                    ? "border-slate-300 bg-white shadow-sm"
+                    : "border-slate-200 bg-slate-50/70"
+                }`}
+              >
+                <Search size={15} aria-hidden="true" className="shrink-0 text-slate-400" />
+                <input
+                  ref={searchInputRef}
+                  type="search"
+                  role="combobox"
+                  aria-label="Search workspace"
+                  aria-expanded={searchOpen}
+                  aria-controls="workspace-search-results"
+                  aria-autocomplete="list"
+                  value={searchQuery}
+                  onChange={(event) => {
+                    setSearchQuery(event.target.value);
+                    setActiveResult(0);
+                    setSearchOpen(true);
+                  }}
+                  onFocus={() => setSearchOpen(true)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search workspace"
+                  className="w-40 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400"
+                />
+                <kbd className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-400">
+                  ⌘K
+                </kbd>
+              </div>
+
+              {searchOpen ? (
+                <div
+                  id="workspace-search-results"
+                  role="listbox"
+                  aria-label="Workspace results"
+                  style={{ background: theme.banner }}
+                  className="absolute top-[calc(100%+8px)] right-0 z-50 w-72 overflow-hidden rounded-2xl p-2 text-white shadow-xl ring-1 ring-white/20"
+                >
+                  <p className="px-2 py-1.5 text-[10px] font-semibold tracking-[0.16em] text-white/70 uppercase">
+                    {searchQuery.trim() ? "Results" : "Jump to"}
+                  </p>
+                  {results.length === 0 ? (
+                    <p className="px-2 py-6 text-center text-xs text-white/80">
+                      No matches for “{searchQuery}”
+                    </p>
+                  ) : (
+                    results.map((item, index) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={`${item.group}-${item.href}`}
+                          type="button"
+                          role="option"
+                          aria-selected={index === activeResult}
+                          onMouseEnter={() => setActiveResult(index)}
+                          onClick={() => goToResult(item)}
+                          className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-white transition-colors ${
+                            index === activeResult ? "bg-white/20" : "hover:bg-white/10"
+                          }`}
+                        >
+                          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/20">
+                            <Icon size={15} aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-xs font-semibold text-white">
+                              {item.label}
+                            </span>
+                            <span className="block truncate text-[10px] text-white/70">
+                              {item.group}
+                              {item.hint ? ` · ${item.hint}` : ""}
+                            </span>
+                          </span>
+                          <ChevronRight size={14} className="text-white/60" aria-hidden="true" />
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              ) : null}
             </div>
+
             <button
               type="button"
               aria-label="Notifications"

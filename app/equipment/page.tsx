@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { EquipmentBrowser } from "../components/equipment-browser";
-import { SiteFooter, SiteHeader } from "../components/site-shell";
+import { EquipmentPageView } from "../components/equipment-page-view";
 
 export const metadata: Metadata = {
   title: "Browse Equipment | Fieldkit",
@@ -9,13 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function EquipmentPage() {
-  return (
-    <>
-      <SiteHeader />
-      <main>
-        <EquipmentBrowser />
-      </main>
-      <SiteFooter />
-    </>
-  );
+  return <EquipmentPageView />;
 }

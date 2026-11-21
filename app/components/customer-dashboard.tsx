@@ -180,14 +180,6 @@ export function CustomerDashboard() {
         eyebrow="YOUR RENTAL HUB"
         title={`Hey ${firstName}, ready for your next project?`}
         description="Find the right gear, follow your rentals, and pick up right where you left off."
-        action={
-          <Link
-            href="/equipment"
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-lg transition-transform hover:-translate-y-0.5"
-          >
-            Find equipment <ArrowUpRight size={16} aria-hidden="true" />
-          </Link>
-        }
       />
 
       {dataError ? <PanelError message={dataError} /> : null}

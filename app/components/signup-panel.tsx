@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { dashboardHref } from "../lib/dashboard-routes";
 import { AccountAccess } from "./account-access";
 import { SiteFooter, SiteHeader } from "./site-shell";
 
@@ -13,15 +14,7 @@ export function SignupPanel() {
         <AccountAccess
           initialMode="register"
           onAuthenticated={(_token, user) => {
-            if (user.role === "admin") {
-              router.push("/admin/dashboard");
-              return;
-            }
-            if (user.role === "owner") {
-              router.push("/owner/dashboard");
-              return;
-            }
-            router.push("/account");
+            router.replace(dashboardHref(user.role));
           }}
         />
       </main>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
+import { AuthGate } from "./components/auth-gate";
 import { ToastProvider } from "./components/toast-provider";
 import "./globals.css";
 
@@ -27,6 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <Suspense fallback={null}>
+          <AuthGate />
+        </Suspense>
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
