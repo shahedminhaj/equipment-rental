@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { AuthPageFallback } from "../components/auth-page-fallback";
 import { SignupPanel } from "../components/signup-panel";
 
 export const metadata: Metadata = {
@@ -6,6 +8,17 @@ export const metadata: Metadata = {
   description: "Create a Fieldkit customer account.",
 };
 
-export default function SignupPage() {
-  return <SignupPanel />;
+type SignupPageProps = Pick<PageProps<"/signup">, "searchParams">;
+
+export default function SignupPage({ searchParams }: SignupPageProps) {
+  return (
+    <Suspense fallback={<AuthPageFallback />}>
+      <SignupContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function SignupContent({ searchParams }: SignupPageProps) {
+  const { next } = await searchParams;
+  return <SignupPanel nextPath={next} />;
 }

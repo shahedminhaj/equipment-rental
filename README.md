@@ -52,6 +52,17 @@ NEXT_PUBLIC_IMGBB_API_KEY=your-imgbb-api-key
 the same client ID in the backend `.env`. Keep database, JWT, admin, and Stripe
 secrets in the backend `.env`; never expose them in a `NEXT_PUBLIC_` variable.
 
+### Booking and Stripe payment
+
+The booking dialog posts the rental details to `POST /api/bookings` with the
+customer's JWT. The backend creates the reservation and the Stripe Checkout
+session, then returns `checkoutUrl`; the browser redirects to
+`checkout.stripe.com`. `STRIPE_SECRET_KEY`, `STRIPE_CURRENCY`, and
+`STRIPE_WEBHOOK_SECRET` belong only in the backend `.env`, so the frontend does
+not need a Stripe SDK or publishable key. Stripe returns the customer to
+`/payment/success` or `/payment/cancel`, which verify or release the temporary
+booking through the API.
+
 Google sign-in also requires the page origin to be registered on **that exact
 OAuth client** in Google Cloud Console → APIs & Services → Credentials → OAuth
 2.0 Client IDs → **Authorized JavaScript origins**:

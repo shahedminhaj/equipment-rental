@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { dashboardHref } from "../lib/dashboard-routes";
+import { postAuthHref } from "../lib/dashboard-routes";
 import { AccountAccess } from "./account-access";
 import { SiteFooter, SiteHeader } from "./site-shell";
 
-export function SignupPanel() {
+export function SignupPanel({ nextPath }: { nextPath?: string | string[] }) {
   const router = useRouter();
   return (
     <>
@@ -14,7 +14,7 @@ export function SignupPanel() {
         <AccountAccess
           initialMode="register"
           onAuthenticated={(_token, user) => {
-            router.replace(dashboardHref(user.role));
+            router.replace(postAuthHref(user.role, nextPath));
           }}
         />
       </main>

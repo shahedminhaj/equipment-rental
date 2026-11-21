@@ -22,9 +22,9 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { EquipmentBooking } from "../../components/equipment-booking";
+import { EquipmentDetailsView } from "../../components/equipment-details-view";
 import { FavoriteButton } from "../../components/favorite-button";
 import { PrivateRouteGate } from "../../components/private-route-gate";
-import { SiteFooter, SiteHeader } from "../../components/site-shell";
 import { appSurfaces, publicTone } from "../../data/app-theme";
 import { formatCurrency, rentalPeriod, type EquipmentListing } from "../../lib/api";
 
@@ -37,23 +37,23 @@ export default function EquipmentDetailsPage({
   params,
 }: PageProps<"/equipment/[id]">) {
   return (
-    <>
-      <SiteHeader />
+    <EquipmentDetailsView>
       <PrivateRouteGate>
         <Suspense fallback={<DetailsSkeleton />}>
           <EquipmentDetailsContent params={params} />
         </Suspense>
       </PrivateRouteGate>
-      <SiteFooter />
-    </>
+    </EquipmentDetailsView>
   );
 }
 
 function DetailsSkeleton() {
   return (
-    <main className={cn(appSurfaces.page, "relative overflow-hidden")}>
-      <div className="pointer-events-none absolute -top-40 left-1/4 size-[28rem] rounded-full bg-violet-200/50 blur-[120px]" />
-      <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/4 size-[28rem] rounded-full bg-violet-200/50 blur-[120px]" />
+      </div>
+      <div className="relative">
         <Skeleton className="h-4 w-64 rounded-full" />
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-6">
@@ -64,7 +64,7 @@ function DetailsSkeleton() {
           <Skeleton className="h-[32rem] rounded-3xl" />
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -114,11 +114,13 @@ async function EquipmentDetailsContent({
   ].filter((spec): spec is { icon: LucideIcon; label: string; value: string } => spec !== null);
 
   return (
-    <main className={cn(appSurfaces.page, "relative overflow-hidden")}>
-      <div className={cn("pointer-events-none absolute -top-40 left-1/4 size-[28rem] rounded-full bg-violet-200/50 blur-[120px]")} />
-      <div className="pointer-events-none absolute -right-32 top-32 size-[24rem] rounded-full bg-fuchsia-200/40 blur-[110px]" />
+    <div className="relative mx-auto max-w-7xl px-4 pt-8 pb-24 sm:px-6 lg:px-8 lg:pb-8">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/4 size-[28rem] rounded-full bg-violet-200/50 blur-[120px]" />
+        <div className="absolute -right-32 top-32 size-[24rem] rounded-full bg-fuchsia-200/40 blur-[110px]" />
+      </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="relative">
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
           <Link href="/equipment" className="font-semibold text-violet-700 hover:text-fuchsia-700">
             All equipment
@@ -254,7 +256,7 @@ async function EquipmentDetailsContent({
             </Card>
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside className="min-w-0">
             <Card className={cn(appSurfaces.card, "overflow-hidden")}>
               <div className={cn("h-1.5 bg-linear-to-r", publicTone.panelAccent)} />
               <CardContent className="p-6">
@@ -307,6 +309,8 @@ async function EquipmentDetailsContent({
           </aside>
         </div>
 
+        <EquipmentBooking item={item} placement="mobile-bar" />
+
         <div className="mt-8">
           <Link
             href="/equipment"
@@ -317,6 +321,6 @@ async function EquipmentDetailsContent({
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

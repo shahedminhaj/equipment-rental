@@ -29,11 +29,11 @@ type Booking = {
 function ResultLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <SiteHeader />
+      <SiteHeader authPage />
       <main
         className={cn(
           appSurfaces.page,
-          "relative isolate flex min-h-[70vh] items-center justify-center overflow-hidden px-6 py-16",
+          "relative isolate flex min-h-screen items-center justify-center overflow-x-clip px-5 py-12 sm:px-6",
         )}
       >
         <div aria-hidden="true" className={appSurfaces.pageGlow} />
@@ -129,6 +129,7 @@ export function PaymentCancelledFromQuery() {
 export function PaymentSuccess({ sessionId }: { sessionId: string }) {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -141,7 +142,7 @@ export function PaymentSuccess({ sessionId }: { sessionId: string }) {
       }
       const token = window.localStorage.getItem("fieldkit_token");
       if (!token) {
-        setError("Sign in again to view your booking status.");
+        setNotice("Payment submitted. Sign in to view your booking status.");
         setIsLoading(false);
         return;
       }
@@ -178,7 +179,13 @@ export function PaymentSuccess({ sessionId }: { sessionId: string }) {
     <ResultLayout>
       <ResultCard
         icon={<CircleCheck className="size-7" aria-hidden="true" />}
-        title={booking?.paymentStatus === "paid" ? "Payment confirmed" : "Payment received"}
+        title={
+          booking?.paymentStatus === "paid"
+            ? "Payment confirmed"
+            : notice
+              ? "Checkout complete"
+              : "Payment received"
+        }
         ctaLabel="Browse equipment"
       >
         {isLoading ? (
@@ -191,6 +198,8 @@ export function PaymentSuccess({ sessionId }: { sessionId: string }) {
           </div>
         ) : error ? (
           <ResultError message={error} />
+        ) : notice ? (
+          <p className={cn(appSurfaces.body, "mx-auto max-w-md")}>{notice}</p>
         ) : booking?.paymentStatus === "paid" ? (
           <>
             <p className={cn(appSurfaces.body, "mx-auto max-w-md")}>
@@ -248,7 +257,7 @@ export function PaymentCancelled({ bookingId }: { bookingId: string }) {
 
       const token = window.localStorage.getItem("fieldkit_token");
       if (!token) {
-        setMessage("Sign in again to release the temporary reservation.");
+        setMessage("Checkout cancelled. Sign in if you need to review this reservation.");
         return;
       }
 
@@ -281,6 +290,10 @@ export function PaymentCancelled({ bookingId }: { bookingId: string }) {
         title="Checkout cancelled"
         ctaLabel="Return to equipment"
       >
+        <p className={cn(appSurfaces.body, "mx-auto mb-4 max-w-md")}>
+          Stripe Checkout opens from the booking form on the equipment details page. Use
+          &ldquo;Book and pay securely&rdquo; there to try again.
+        </p>
         {error ? (
           <ResultError message={error} />
         ) : (

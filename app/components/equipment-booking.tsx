@@ -1,24 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowUpRight, CalendarDays, ShieldCheck, TriangleAlert, X } from "lucide-react";
+import { ArrowRight, CalendarDays, ShieldCheck, TriangleAlert, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { appSurfaces, publicTone } from "../data/app-theme";
+import { publicTone } from "../data/app-theme";
 import { apiRequest, formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 import { GoogleSignInButton } from "./google-sign-in";
-import { clearAuth, saveAuth, type AuthUser } from "../lib/auth";
+import { clearAuth, getStoredRole, saveAuth, type AuthUser } from "../lib/auth";
 import { useToast } from "./toast-provider";
 
 type AuthResponse = {
   token: string;
   user: AuthUser;
+};
+
+type BookingQuote = {
+  units: number;
+  totalAmount: number;
+  currency: string;
 };
 
 function localDateValue(date: Date) {
@@ -43,26 +46,41 @@ function rentalUnits(start: string, end: string, rentalType: string) {
   return days;
 }
 
+function formatPaymentAmount(amount: number, currency: string) {
+  if (currency.toLowerCase() === "bdt") {
+    return `৳ ${new Intl.NumberFormat("en-BD", { maximumFractionDigits: 2 }).format(amount)}`;
+  }
+  try {
+    return new Intl.NumberFormat("en-BD", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return formatCurrency(amount);
+  }
+}
+
 function FieldError({ children }: { children: ReactNode }) {
   return (
-    <Alert
-      variant="destructive"
-      className="rounded-xl border-rose-100 bg-rose-50/70 px-3 py-2 text-rose-900"
-    >
-      <TriangleAlert className="size-4" aria-hidden="true" />
-      <AlertDescription className="text-xs leading-relaxed text-rose-900">
-        {children}
-      </AlertDescription>
-    </Alert>
+    <p className="flex items-center gap-1.5 text-xs leading-relaxed text-rose-600" role="alert">
+      <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
+      {children}
+    </p>
   );
 }
 
 const fieldClass =
   "h-10 rounded-xl border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-violet-400 focus-visible:ring-2 focus-visible:ring-violet-100";
 
-const bookingSteps = ["01 · Rental", "02 · Details", "03 · Payment"];
-
-export function EquipmentBooking({ item }: { item: EquipmentListing }) {
+export function EquipmentBooking({
+  item,
+  placement = "inline",
+}: {
+  item: EquipmentListing;
+  placement?: "inline" | "mobile-bar";
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -77,6 +95,10 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
   const [signedInEmail, setSignedInEmail] = useState("");
+  const [signedInRole, setSignedInRole] = useState<AuthUser["role"] | null>(null);
+  const [quote, setQuote] = useState<BookingQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const { notify } = useToast();
@@ -87,29 +109,76 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
     [endDate, item.rentalType, startDate],
   );
   const total = units * quantityValue * item.price;
+  const displayedTotal = quote?.totalAmount ?? total;
+  const displayedCurrency = quote?.currency || "bdt";
   const dateRangeInvalid = Boolean(startDate && endDate && !units);
   const quantityInvalid =
     !Number.isInteger(quantityValue) ||
     quantityValue < 1 ||
     quantityValue > item.availableQuantity;
+  const wrongRole =
+    Boolean(token) && signedInRole !== null && signedInRole !== "customer";
   const canBook =
     item.availableQuantity > 0 &&
     Boolean(startDate && endDate && units) &&
     !quantityInvalid &&
+    !wrongRole &&
+    Boolean(quote) &&
+    !quoteLoading &&
     phone.trim().length >= 7 &&
     address.trim().length >= 5;
 
   useEffect(() => {
+    if (!isOpen || !units || quantityInvalid) {
+      setQuote(null);
+      setQuoteLoading(false);
+      setQuoteError("");
+      return;
+    }
+
+    let active = true;
+    setQuote(null);
+    setQuoteLoading(true);
+    setQuoteError("");
+    const timeout = window.setTimeout(() => {
+      apiRequest<BookingQuote>("/bookings/quote", {
+        method: "POST",
+        body: JSON.stringify({
+          equipmentId: item.id,
+          rentalStartDate: startDate,
+          rentalEndDate: endDate,
+          quantity: quantityValue,
+        }),
+      })
+        .then((result) => {
+          if (active) setQuote(result);
+        })
+        .catch((quoteFailure) => {
+          if (active) {
+            setQuoteError(
+              quoteFailure instanceof Error ? quoteFailure.message : "Could not calculate the rental total.",
+            );
+          }
+        })
+        .finally(() => {
+          if (active) setQuoteLoading(false);
+        });
+    }, 200);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [endDate, isOpen, item.id, quantityInvalid, quantityValue, startDate, units]);
+
+  useEffect(() => {
     if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape" && !isSubmitting) setIsOpen(false);
     }
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, isSubmitting]);
@@ -125,6 +194,7 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
     setError("");
     setToken(window.localStorage.getItem("fieldkit_token") || "");
     setSignedInEmail(window.localStorage.getItem("fieldkit_user_email") || "");
+    setSignedInRole(getStoredRole());
     setIsOpen(true);
   }
 
@@ -137,11 +207,13 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
     clearAuth();
     setToken("");
     setSignedInEmail("");
+    setSignedInRole(null);
+    setError("");
     notify("You have been signed out.", "info");
   }
 
   async function startCheckout(accessToken: string) {
-    const result = await apiRequest<{ checkoutUrl: string }>("/bookings", {
+    const result = await apiRequest<{ checkoutUrl?: string }>("/bookings", {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({
@@ -154,7 +226,15 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
         notes: notes.trim(),
       }),
     });
-    const checkoutUrl = new URL(result.checkoutUrl);
+    if (!result.checkoutUrl) {
+      throw new Error("The server did not return a Stripe Checkout link. Please try again.");
+    }
+    let checkoutUrl: URL;
+    try {
+      checkoutUrl = new URL(result.checkoutUrl);
+    } catch {
+      throw new Error("The server returned an invalid Stripe Checkout URL");
+    }
     if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.stripe.com") {
       throw new Error("The server returned an invalid Stripe Checkout URL");
     }
@@ -163,7 +243,22 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
 
   async function handleCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canBook || isSubmitting) return;
+    if (isSubmitting) return;
+    if (!canBook) {
+      const reason = quoteError || (
+        wrongRole
+          ? "Please sign in with a customer account to book equipment."
+          : dateRangeInvalid
+            ? "Choose an end date on or after the start date."
+            : quoteLoading
+              ? "Checking the rental total. Try again in a moment."
+              : !quote
+                ? "We could not confirm the rental total. Check the connection and try again."
+                : "Complete the rental details before continuing."
+      );
+      setError(reason);
+      return;
+    }
 
     setIsSubmitting(true);
     setError("");
@@ -181,10 +276,14 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
             ),
           },
         );
+        if (authResponse.user.role !== "customer") {
+          throw new Error("Bookings need a customer account. Please switch to a customer account first.");
+        }
         accessToken = authResponse.token;
         saveAuth(accessToken, authResponse.user);
         setToken(accessToken);
         setSignedInEmail(authResponse.user.email);
+        setSignedInRole(authResponse.user.role);
         notify(
           authMode === "register"
             ? "Account created. Redirecting to Stripe..."
@@ -214,6 +313,7 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
       saveAuth(authResponse.token, authResponse.user);
       setToken(authResponse.token);
       setSignedInEmail(authResponse.user.email);
+      setSignedInRole(authResponse.user.role);
       notify("Google account connected. Redirecting to Stripe...");
       await startCheckout(authResponse.token);
     } catch (checkoutError) {
@@ -227,51 +327,61 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
     }
   }
 
+  const triggerButton = (
+    <Button
+      className={cn(
+        "h-11 w-full justify-between rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20",
+        "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+        publicTone.gradient,
+      )}
+      type="button"
+      disabled={!item.availableQuantity}
+      onClick={openModal}
+    >
+      {item.availableQuantity ? "Book and pay securely" : "Currently unavailable"}
+      {item.availableQuantity > 0 && <ArrowRight className="size-4" aria-hidden="true" />}
+    </Button>
+  );
+
   return (
     <>
-      <Button
-        className={cn(
-          "h-11 w-full justify-between rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20",
-          "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
-          publicTone.gradient,
-        )}
-        type="button"
-        disabled={!item.availableQuantity}
-        onClick={openModal}
-      >
-        {item.availableQuantity ? "Book and pay securely" : "Currently unavailable"}
-        {item.availableQuantity > 0 && <ArrowUpRight className="size-4" aria-hidden="true" />}
-      </Button>
-      <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
-        Sign in or create an account to reserve this equipment and continue to
-        Stripe Checkout.
-      </p>
+      {placement === "mobile-bar" ? (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-12px_30px_-24px_rgba(15,23,42,0.5)] backdrop-blur lg:hidden">
+          {triggerButton}
+          <p className="mt-1.5 text-center text-[10px] text-slate-500">Secure checkout with Stripe</p>
+        </div>
+      ) : (
+        <div className="hidden lg:block">
+          {triggerButton}
+          <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
+            Sign in or create an account to reserve this equipment and continue to Stripe Checkout.
+          </p>
+        </div>
+      )}
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain p-4 sm:p-6">
           <button
-            className="absolute inset-0 cursor-default bg-slate-950/70 backdrop-blur-sm"
+            className="fixed inset-0 z-0 cursor-default bg-slate-950/70 backdrop-blur-sm"
             type="button"
             aria-label="Close booking form"
             disabled={isSubmitting}
             onClick={closeModal}
           />
-          <Card
-            className={cn(
-              appSurfaces.card,
-              "relative z-10 max-h-[90vh] w-full max-w-lg gap-0 overflow-y-auto py-0 shadow-2xl shadow-slate-950/25",
-            )}
+          <div className="relative z-10 mx-auto w-full max-w-lg">
+          <div
+            className="relative w-full bg-white shadow-2xl shadow-slate-950/30 sm:rounded-3xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="booking-title"
           >
-            <div aria-hidden="true" className={cn("h-1 w-full bg-linear-to-r", publicTone.gradient)} />
+            <div aria-hidden="true" className={cn("h-1 w-full shrink-0 bg-linear-to-r", publicTone.gradient)} />
 
-            <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
+            <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-5 pb-4 sm:px-6">
               <div className="flex items-start gap-3">
                 <span
                   className={cn(
-                    "grid size-11 shrink-0 place-items-center rounded-2xl bg-linear-to-br text-white shadow-md",
+                    "grid size-10 shrink-0 place-items-center rounded-2xl bg-linear-to-br text-white shadow-md",
                     publicTone.gradient,
                   )}
                   aria-hidden="true"
@@ -279,13 +389,13 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
                   <CalendarDays className="size-5" />
                 </span>
                 <div>
-                  <p className={cn("text-[10px] font-bold tracking-[0.16em] uppercase", publicTone.accentText)}>
-                    SECURE RENTAL CHECKOUT
+                  <p className="text-[10px] font-bold tracking-[0.16em] text-violet-700 uppercase">
+                    Book this equipment
                   </p>
-                  <h2 id="booking-title" className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                    Plan your rental.
+                  <h2 id="booking-title" className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                    Plan your rental
                   </h2>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  <p className="mt-1 text-xs text-slate-500">
                     {item.name} · {formatCurrency(item.price)} / {rentalPeriod(item.rentalType)}
                   </p>
                 </div>
@@ -301,184 +411,136 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
               </button>
             </div>
 
-            <div className="px-6 pt-6 sm:px-8" aria-label="Booking steps">
-              <div className="flex flex-wrap gap-2">
-                {bookingSteps.map((step, index) => (
-                  <Badge
-                    key={step}
-                    variant={index === 0 ? "default" : "outline"}
-                    className={cn(
-                      "h-auto rounded-full px-3 py-1 text-[10px] font-bold tracking-[0.08em]",
-                      index === 0
-                        ? cn("border-transparent text-white shadow-sm", "bg-linear-to-r", publicTone.gradient)
-                        : "border-slate-200 bg-white text-slate-500",
-                    )}
-                  >
-                    {step}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <Separator className="mt-5" />
-
-            <form className="flex flex-col gap-5 px-6 py-6 sm:px-8" onSubmit={handleCheckout}>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="booking-start" className="text-xs font-semibold text-slate-700">
-                    Rental start date
-                  </Label>
-                  <Input
-                    id="booking-start"
-                    className={fieldClass}
-                    type="date"
-                    min={today}
-                    required
-                    value={startDate}
-                    onChange={(event) => updateField(() => setStartDate(event.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="booking-end" className="text-xs font-semibold text-slate-700">
-                    Rental end date
-                  </Label>
-                  <Input
-                    id="booking-end"
-                    className={fieldClass}
-                    type="date"
-                    min={startDate || today}
-                    required
-                    value={endDate}
-                    onChange={(event) => updateField(() => setEndDate(event.target.value))}
-                  />
-                </div>
-              </div>
-              {dateRangeInvalid && (
-                <FieldError>End date must be the same as or later than the start date.</FieldError>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="booking-quantity" className="text-xs font-semibold text-slate-700">
-                  Required quantity
-                </Label>
-                <Input
-                  id="booking-quantity"
-                  className={fieldClass}
-                  type="number"
-                  min="1"
-                  max={item.availableQuantity}
-                  step="1"
-                  required
-                  value={quantity}
-                  onChange={(event) => updateField(() => setQuantity(event.target.value))}
-                />
-              </div>
-              {quantityInvalid && (
-                <FieldError>Enter a whole number from 1 to {item.availableQuantity}.</FieldError>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="booking-phone" className="text-xs font-semibold text-slate-700">
-                  Contact number
-                </Label>
-                <Input
-                  id="booking-phone"
-                  className={fieldClass}
-                  type="tel"
-                  autoComplete="tel"
-                  minLength={7}
-                  maxLength={30}
-                  placeholder="Your phone number"
-                  required
-                  value={phone}
-                  onChange={(event) => updateField(() => setPhone(event.target.value))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="booking-address" className="text-xs font-semibold text-slate-700">
-                  Delivery or pickup address
-                </Label>
-                <Input
-                  id="booking-address"
-                  className={fieldClass}
-                  type="text"
-                  autoComplete="street-address"
-                  minLength={5}
-                  maxLength={300}
-                  placeholder="Where do you need the equipment?"
-                  required
-                  value={address}
-                  onChange={(event) => updateField(() => setAddress(event.target.value))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="booking-notes" className="text-xs font-semibold text-slate-700">
-                  Additional notes <span className="text-[11px] font-normal text-slate-400">Optional</span>
-                </Label>
-                <textarea
-                  id="booking-notes"
-                  rows={3}
-                  maxLength={500}
-                  placeholder="Anything the owner should know?"
-                  value={notes}
-                  onChange={(event) => updateField(() => setNotes(event.target.value))}
-                  className={cn(
-                    fieldClass,
-                    "h-auto min-h-20 resize-y py-2 focus-visible:outline-none",
-                  )}
-                />
-              </div>
-
-              <Card
-                className={cn(
-                  appSurfaces.softCard,
-                  "relative gap-0 border-violet-100 bg-violet-50/60 py-3",
-                )}
-              >
-                <div aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-0.5 bg-linear-to-r", publicTone.gradient)} />
-                <CardContent className="px-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <span className="block text-xs font-semibold text-slate-700">
-                        Estimated total
-                      </span>
-                      <small className="mt-1 block text-[11px] leading-relaxed text-slate-500">
-                        {units
-                          ? `${units} ${item.rentalType.toLowerCase()} ${units === 1 ? "period" : "periods"} × ${quantityValue || 0}`
-                          : `Rate: ${formatCurrency(item.price)} per ${rentalPeriod(item.rentalType)}`}
-                      </small>
-                    </div>
-                    <strong className="shrink-0 text-xl font-bold tracking-tight text-slate-900">
-                      {formatCurrency(total)}
-                    </strong>
+            <form className="space-y-0" onSubmit={handleCheckout}>
+              <div className="space-y-4 px-5 pb-5 sm:px-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="booking-start" className="text-xs font-semibold text-slate-700">
+                      Rental start date
+                    </Label>
+                    <Input
+                      id="booking-start"
+                      className={fieldClass}
+                      type="date"
+                      min={today}
+                      required
+                      value={startDate}
+                      onChange={(event) => updateField(() => setStartDate(event.target.value))}
+                    />
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="booking-end" className="text-xs font-semibold text-slate-700">
+                      Rental end date
+                    </Label>
+                    <Input
+                      id="booking-end"
+                      className={fieldClass}
+                      type="date"
+                      min={startDate || today}
+                      required
+                      value={endDate}
+                      onChange={(event) => updateField(() => setEndDate(event.target.value))}
+                    />
+                  </div>
+                </div>
+                {dateRangeInvalid && (
+                  <FieldError>End date must be the same as or later than the start date.</FieldError>
+                )}
 
-              <Card className={cn(appSurfaces.softCard, "gap-0 border-slate-200/80 bg-slate-50/70 py-0")}>
-                <CardContent className="space-y-4 p-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="booking-quantity" className="text-xs font-semibold text-slate-700">
+                    Required quantity
+                  </Label>
+                  <Input
+                    id="booking-quantity"
+                    className={fieldClass}
+                    type="number"
+                    min="1"
+                    max={item.availableQuantity}
+                    step="1"
+                    required
+                    value={quantity}
+                    onChange={(event) => updateField(() => setQuantity(event.target.value))}
+                  />
+                  {quantityInvalid && (
+                    <FieldError>Enter a whole number from 1 to {item.availableQuantity}.</FieldError>
+                  )}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="booking-phone" className="text-xs font-semibold text-slate-700">
+                      Contact number
+                    </Label>
+                    <Input
+                      id="booking-phone"
+                      className={fieldClass}
+                      type="tel"
+                      autoComplete="tel"
+                      minLength={7}
+                      maxLength={30}
+                      placeholder="Your phone number"
+                      required
+                      value={phone}
+                      onChange={(event) => updateField(() => setPhone(event.target.value))}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="booking-address" className="text-xs font-semibold text-slate-700">
+                      Delivery or pickup address
+                    </Label>
+                    <Input
+                      id="booking-address"
+                      className={fieldClass}
+                      type="text"
+                      autoComplete="street-address"
+                      minLength={5}
+                      maxLength={300}
+                      placeholder="Where do you need it?"
+                      required
+                      value={address}
+                      onChange={(event) => updateField(() => setAddress(event.target.value))}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="booking-notes" className="text-xs font-semibold text-slate-700">
+                    Additional notes <span className="font-normal text-slate-400">(optional)</span>
+                  </Label>
+                  <textarea
+                    id="booking-notes"
+                    rows={2}
+                    maxLength={500}
+                    placeholder="Anything the owner should know?"
+                    value={notes}
+                    onChange={(event) => updateField(() => setNotes(event.target.value))}
+                    className={cn(fieldClass, "h-auto min-h-16 resize-y py-2 focus-visible:outline-none")}
+                  />
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                   {token ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-2 text-xs text-slate-600">
-                        <ShieldCheck className="size-4 shrink-0 text-emerald-600" aria-hidden="true" />
-                        Signed in as <strong className="font-semibold text-slate-900">{signedInEmail || "your account"}</strong>
-                      </span>
-                      <Button
-                        className="h-7 rounded-full px-3 text-xs font-semibold text-violet-700 hover:bg-violet-50 hover:text-violet-800"
-                        variant="ghost"
-                        size="sm"
-                        type="button"
-                        onClick={signOut}
-                      >
-                        Sign out
-                      </Button>
-                    </div>
+                    wrongRole ? (
+                      <div className="space-y-3">
+                        <p className="text-xs leading-relaxed text-rose-700">
+                          You are signed in with a {signedInRole} account. Bookings require a customer account.
+                        </p>
+                        <p className="text-xs text-slate-500">Use a customer account to continue.</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-2 text-xs text-slate-600">
+                          <ShieldCheck className="size-4 shrink-0 text-emerald-600" aria-hidden="true" />
+                          Signed in as <strong className="font-semibold text-slate-900">{signedInEmail || "your account"}</strong>
+                        </span>
+                      </div>
+                    )
                   ) : (
-                    <>
-                      <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <strong className="text-sm font-semibold text-slate-900">
-                          {authMode === "login" ? "Sign in to book" : "Create a renter account"}
+                          {authMode === "login" ? "Sign in to continue" : "Create a customer account"}
                         </strong>
                         <Button
                           className="h-auto p-0 text-xs font-semibold text-violet-700 hover:text-fuchsia-700"
@@ -494,7 +556,7 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
                         </Button>
                       </div>
                       {authMode === "register" && (
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <Label htmlFor="booking-name" className="text-xs font-semibold text-slate-700">
                             Name
                           </Label>
@@ -511,34 +573,36 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
                           />
                         </div>
                       )}
-                      <div className="space-y-2">
-                        <Label htmlFor="booking-email" className="text-xs font-semibold text-slate-700">
-                          Email
-                        </Label>
-                        <Input
-                          id="booking-email"
-                          className={fieldClass}
-                          type="email"
-                          autoComplete="email"
-                          required
-                          value={email}
-                          onChange={(event) => updateField(() => setEmail(event.target.value))}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="booking-password" className="text-xs font-semibold text-slate-700">
-                          Password
-                        </Label>
-                        <Input
-                          id="booking-password"
-                          className={fieldClass}
-                          type="password"
-                          autoComplete={authMode === "login" ? "current-password" : "new-password"}
-                          minLength={6}
-                          required
-                          value={password}
-                          onChange={(event) => updateField(() => setPassword(event.target.value))}
-                        />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="booking-email" className="text-xs font-semibold text-slate-700">
+                            Email
+                          </Label>
+                          <Input
+                            id="booking-email"
+                            className={fieldClass}
+                            type="email"
+                            autoComplete="email"
+                            required
+                            value={email}
+                            onChange={(event) => updateField(() => setEmail(event.target.value))}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="booking-password" className="text-xs font-semibold text-slate-700">
+                            Password
+                          </Label>
+                          <Input
+                            id="booking-password"
+                            className={fieldClass}
+                            type="password"
+                            autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                            minLength={6}
+                            required
+                            value={password}
+                            onChange={(event) => updateField(() => setPassword(event.target.value))}
+                          />
+                        </div>
                       </div>
                       <div className="flex justify-center pt-1">
                         <GoogleSignInButton
@@ -549,38 +613,76 @@ export function EquipmentBooking({ item }: { item: EquipmentListing }) {
                           }}
                         />
                       </div>
-                    </>
+                    </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              {error && <FieldError>{error}</FieldError>}
-
-              <div className="flex items-center justify-end gap-3 pt-1">
-                <Button
-                  className="h-10 rounded-full border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                  variant="outline"
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={closeModal}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className={cn(
-                    "h-10 rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/20",
-                    "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
-                    publicTone.gradient,
-                  )}
-                  type="submit"
-                  disabled={!canBook || isSubmitting}
-                >
-                  {isSubmitting ? "Preparing checkout..." : "Continue to Stripe"}
-                  {!isSubmitting && <ArrowUpRight className="size-4" aria-hidden="true" />}
-                </Button>
+              <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+                {error && (
+                  <Alert
+                    variant="destructive"
+                    className="mb-3 rounded-xl border-rose-100 bg-rose-50/70 px-3 py-2 text-rose-900"
+                  >
+                    <TriangleAlert className="size-4" aria-hidden="true" />
+                    <AlertDescription className="text-xs leading-relaxed text-rose-900">
+                      {error}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-xs font-semibold text-slate-700">Rental total</span>
+                    <small className="block text-[11px] text-slate-500">
+                      {units
+                        ? `${units} ${item.rentalType.toLowerCase()} ${units === 1 ? "period" : "periods"} × ${quantityValue || 0}`
+                        : `Rate: ${formatCurrency(item.price)} per ${rentalPeriod(item.rentalType)}`}
+                    </small>
+                  </div>
+                  <strong className="shrink-0 text-xl font-bold tracking-tight text-slate-900">
+                    {formatPaymentAmount(displayedTotal, displayedCurrency)}
+                  </strong>
+                </div>
+                {quoteError ? <p className="mb-2 text-xs text-rose-600" role="alert">{quoteError}</p> : null}
+                <div className="grid grid-cols-2 gap-2">
+                  {token ? (
+                    <Button
+                      className="h-10 w-full rounded-full px-3 text-xs font-semibold text-slate-600"
+                      variant="ghost"
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={signOut}
+                    >
+                      Sign out
+                    </Button>
+                  ) : <span className="self-center text-[10px] text-slate-400">Secure Stripe Checkout</span>}
+                  <Button
+                    className="h-10 w-full rounded-full px-3 text-xs font-semibold text-slate-600"
+                    variant="outline"
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={closeModal}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className={cn(
+                      "col-span-2 h-11 w-full rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/20",
+                      "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+                      publicTone.gradient,
+                    )}
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Opening secure checkout..." : "Continue to secure checkout"}
+                    {!isSubmitting && <ArrowRight className="size-4" aria-hidden="true" />}
+                  </Button>
+                </div>
+                <p className="mt-2 text-center text-[10px] text-slate-400">Card details are entered securely on Stripe.</p>
               </div>
             </form>
-          </Card>
+          </div>
+          </div>
         </div>
       )}
     </>

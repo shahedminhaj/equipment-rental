@@ -377,7 +377,7 @@ export function CustomerDashboard() {
                 return (
                   <Link
                     key={category.name}
-                    href="/equipment"
+                    href={`/equipment?category=${encodeURIComponent(category.name)}`}
                     className="group overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 transition-all hover:-translate-y-1 hover:border-slate-300 hover:shadow-md"
                   >
                     <span className={`block h-0.5 w-10 rounded-full bg-linear-to-r ${category.bar}`} />
