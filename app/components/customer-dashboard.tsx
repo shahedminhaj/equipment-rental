@@ -204,8 +204,8 @@ export function CustomerDashboard() {
     <DashboardShell
       role="customer"
       user={user}
-      title="My rental dashboard"
-      description="Keep track of your bookings, saved gear, and everything you need for your next project."
+      title="My rental overview"
+      description="See your rental activity at a glance. Use the sidebar to open each workspace section."
       isLoading={isLoading}
       error={error}
       signOut={signOut}
@@ -215,7 +215,7 @@ export function CustomerDashboard() {
         gradient={heroGlow}
         eyebrow="YOUR RENTAL HUB"
         title={`Hey ${firstName}, ready for your next project?`}
-        description="Find the right gear, follow your rentals, and pick up right where you left off."
+        description="Your workspace is organized by task. Choose rentals, favorites, equipment, or profile from the sidebar."
         action={
           <Link
             href="/equipment"
@@ -238,7 +238,7 @@ export function CustomerDashboard() {
             ))}
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-3">
+          <div className="grid gap-5 xl:grid-cols-1">
             <Panel
               id="rentals"
               title="Recent rentals"
@@ -246,7 +246,7 @@ export function CustomerDashboard() {
               icon={CalendarDays}
               soft={tone.iconTile}
               accent={tone.panelAccent}
-              className="xl:col-span-2"
+              className="hidden"
               action={
                 <Link href="/account/rentals" className={`inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:brightness-90 ${tone.accentText}`}>
                   View all <ArrowUpRight size={13} aria-hidden="true" />
@@ -303,8 +303,6 @@ export function CustomerDashboard() {
               <div className="space-y-3">
                 {[
                   { label: "Browse all equipment", href: "/equipment", icon: PackageSearch },
-                  { label: "Manage account details", href: "/account/profile", icon: Wrench },
-                  { label: "View payment receipts", href: "/account/rentals", icon: TakaSign },
                 ].map((action) => {
                   const Icon = action.icon;
                   return (
@@ -327,6 +325,7 @@ export function CustomerDashboard() {
 
           <Panel
             id="favorites"
+            className="hidden"
             title="Favorite equipment"
             subtitle="Gear you saved for later"
             icon={Heart}
@@ -396,7 +395,7 @@ export function CustomerDashboard() {
             )}
           </Panel>
 
-          <Panel title="Explore by category" subtitle="Find gear for whatever you're making" icon={PackageSearch} soft={tone.iconTile} accent={tone.panelAccent}>
+          <Panel className="hidden" title="Explore by category" subtitle="Find gear for whatever you're making" icon={PackageSearch} soft={tone.iconTile} accent={tone.panelAccent}>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {categories.map((category, index) => {
                 const look = categoryLooks[index % categoryLooks.length];

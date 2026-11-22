@@ -143,10 +143,13 @@ export function AccountAccess({
     setIsSubmitting(true);
     setError("");
     try {
-      const response = await apiRequest<AuthResponse>("/auth/login", {
+      const response = await apiRequest<AuthResponse>("/auth/user/login", {
         method: "POST",
         body: JSON.stringify({ email: email.trim(), password }),
       });
+      if (response.user.role === "admin") {
+        throw new Error("This account uses Admin sign in. Select Admin to continue.");
+      }
       acceptAuth(response, "login");
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : "Could not sign in";
@@ -162,7 +165,7 @@ export function AccountAccess({
     setIsSubmitting(true);
     setError("");
     try {
-      const response = await apiRequest<AuthResponse>("/auth/login", {
+      const response = await apiRequest<AuthResponse>("/auth/admin/login", {
         method: "POST",
         body: JSON.stringify({ email: email.trim(), password }),
       });
@@ -267,13 +270,14 @@ export function AccountAccess({
     setIsSubmitting(true);
     setError("");
     try {
-      acceptAuth(
-        await apiRequest<AuthResponse>("/auth/google", {
-          method: "POST",
-          body: JSON.stringify({ credential }),
-        }),
-        isSignup ? "register" : "login",
-      );
+      const response = await apiRequest<AuthResponse>("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ credential }),
+      });
+      if (accountType === "user" && response.user.role === "admin") {
+        throw new Error("This account uses Admin sign in. Select Admin to continue.");
+      }
+      acceptAuth(response, isSignup ? "register" : "login");
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : "Google sign-in failed";
       notify(message, "error");

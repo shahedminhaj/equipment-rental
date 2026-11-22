@@ -23,6 +23,7 @@ type Rental = {
   totalAmount: number;
   bookingStatus: string;
   paymentStatus: string;
+  cancellationPending?: boolean;
   equipment?: { id: string } | null;
 };
 
@@ -85,6 +86,12 @@ export function CustomerRentals() {
   async function cancelRental() {
     const rental = rentalToRemove;
     if (!token || !rental || busyId) return;
+    if (rental.bookingStatus.toLowerCase() !== "pending" || rental.cancellationPending) {
+      setRentalToRemove(null);
+      setReloadKey((key) => key + 1);
+      notify("Only pending bookings can be cancelled. Confirmed bookings cannot be cancelled or refunded.", "error");
+      return;
+    }
     setBusyId(rental.id);
     try {
       const response = await apiRequest<{ booking: Rental }>(`/bookings/${rental.id}/cancel-checkout`, {
@@ -100,6 +107,8 @@ export function CustomerRentals() {
         ? "Booking cancelled. Your refund is being processed."
         : "Pending booking removed.");
     } catch (cancelError) {
+      setRentalToRemove(null);
+      setReloadKey((key) => key + 1);
       notify(cancelError instanceof Error ? cancelError.message : "Could not remove this booking.", "error");
     } finally {
       setBusyId("");
@@ -130,7 +139,7 @@ export function CustomerRentals() {
       <Panel
         id="rentals"
         title="Booking history"
-        subtitle="Pending requests can be cancelled here. Paid cancellations are refunded."
+        subtitle="Only pending requests can be cancelled. Confirmed bookings cannot be cancelled or refunded."
         icon={CalendarDays}
         soft={tone.iconTile}
         accent={tone.panelAccent}
@@ -171,7 +180,7 @@ export function CustomerRentals() {
                         View equipment <ArrowUpRight size={13} aria-hidden="true" />
                       </Link>
                     ) : null}
-                    {isPending ? (
+                    {isPending && !rental.cancellationPending ? (
                       <Button
                         type="button"
                         size="sm"
@@ -183,6 +192,10 @@ export function CustomerRentals() {
                         <Trash2 size={14} aria-hidden="true" />
                         {busyId === rental.id ? "Removing..." : "Remove booking"}
                       </Button>
+                    ) : rental.cancellationPending ? (
+                      <Badge variant="secondary" className="ml-auto rounded-full bg-amber-100 text-amber-900">Cancellation processing</Badge>
+                    ) : rental.bookingStatus.toLowerCase() === "confirmed" ? (
+                      <span className="ml-auto text-right text-xs font-medium text-slate-500">Confirmed · cannot cancel or refund</span>
                     ) : rental.bookingStatus.toLowerCase() === "completed" ? (
                       <Badge variant="secondary" className="gap-1 rounded-full bg-emerald-100 text-emerald-800"><CircleCheck size={12} aria-hidden="true" /> Completed</Badge>
                     ) : null}
