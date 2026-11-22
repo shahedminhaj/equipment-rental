@@ -179,7 +179,7 @@ export function SiteHeader({ authPage = false }: { authPage?: boolean }) {
                       className={buttonVariants({
                         size: "sm",
                         className:
-                          "rounded-full bg-[#315c3c] px-4 text-white shadow-[0_12px_28px_-18px_rgba(49,92,60,0.85)] hover:bg-[#27492f]",
+                          "cta-green-link rounded-full bg-[#315c3c] px-4 shadow-[0_12px_28px_-18px_rgba(49,92,60,0.85)] hover:bg-[#27492f]",
                       })}
                     >
                       {header.getStarted}
