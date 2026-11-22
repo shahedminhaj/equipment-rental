@@ -78,9 +78,12 @@ const themes: Record<DashboardRole, Theme> = {
     workspace: "Control center",
     nav: [
       { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "Analytics", href: "#analytics", icon: ChartNoAxesCombined, hint: "Marketplace" },
-      { label: "Review queue", href: "#review", icon: ClipboardCheck, hint: "Pending" },
-      { label: "Users & roles", href: "#users", icon: Users },
+      { label: "Analytics", href: "/admin/dashboard/analytics", icon: ChartNoAxesCombined, hint: "Marketplace" },
+      { label: "Review queue", href: "/admin/dashboard/review", icon: ClipboardCheck, hint: "Pending" },
+      { label: "Users & roles", href: "/admin/dashboard/users", icon: Users },
+      { label: "Equipment", href: "/admin/dashboard/equipment", icon: Package },
+      { label: "Rentals", href: "/admin/dashboard/rentals", icon: CalendarDays },
+      { label: "Profile", href: "/account/profile", icon: Settings },
     ],
   },
   owner: {
@@ -88,9 +91,10 @@ const themes: Record<DashboardRole, Theme> = {
     workspace: "Owner studio",
     nav: [
       { label: "Overview", href: "/owner/dashboard", icon: LayoutDashboard },
-      { label: "Earnings", href: "#analytics", icon: ChartNoAxesCombined },
-      { label: "My listings", href: "#inventory", icon: Package },
-      { label: "Bookings", href: "#bookings", icon: CalendarDays },
+      { label: "Earnings", href: "/owner/dashboard/earnings", icon: ChartNoAxesCombined },
+      { label: "My listings", href: "/owner/dashboard/listings", icon: Package },
+      { label: "Bookings", href: "/owner/dashboard/bookings", icon: CalendarDays },
+      { label: "Profile", href: "/account/profile", icon: Settings },
     ],
   },
   customer: {
@@ -98,9 +102,10 @@ const themes: Record<DashboardRole, Theme> = {
     workspace: "My rental hub",
     nav: [
       { label: "Overview", href: "/customer/dashboard", icon: LayoutDashboard },
-      { label: "My rentals", href: "#rentals", icon: CalendarDays },
-      { label: "Favorites", href: "#favorites", icon: Heart },
+      { label: "My rentals", href: "/account/rentals", icon: CalendarDays },
+      { label: "Favorites", href: "/account/favorites", icon: Heart },
       { label: "Find equipment", href: "/equipment", icon: Store },
+      { label: "Profile", href: "/account/profile", icon: Settings },
     ],
   },
 };

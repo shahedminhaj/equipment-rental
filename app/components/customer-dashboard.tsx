@@ -314,7 +314,7 @@ export function CustomerDashboard() {
                       className="flex items-center gap-3 rounded-xl border border-[#dce6d7] bg-[#f8faf5] p-3 transition-all hover:-translate-y-0.5 hover:border-[#b7cba9] hover:bg-white hover:shadow-sm"
                     >
                       <span className={`grid size-9 place-items-center rounded-lg ${tone.iconTile}`}>
-                        <Icon size={16} aria-hidden="true" />
+                        <Icon size={16} aria-hidden={true} />
                       </span>
                       <span className="flex-1 text-sm font-medium text-slate-700">{action.label}</span>
                       <ArrowUpRight size={15} className="text-slate-400" aria-hidden="true" />

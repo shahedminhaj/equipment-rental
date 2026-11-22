@@ -112,7 +112,7 @@ export function StatCard({
             className="grid size-11 place-items-center rounded-xl text-white shadow-md"
             style={{ background: gradient }}
           >
-            <Icon size={19} aria-hidden="true" />
+            <Icon size={19} aria-hidden={true} />
           </span>
           <Badge
             variant="secondary"

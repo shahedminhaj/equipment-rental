@@ -8,6 +8,7 @@ import {
   Clock3,
   Package,
   Pencil,
+  Plus,
   ShieldCheck,
   Trash2,
   TrendingUp,
@@ -17,12 +18,11 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { appSurfaces, roleTones } from "../data/app-theme";
 import { apiRequest, formatCurrency, type EquipmentListing } from "../lib/api";
 import type { AuthUser } from "../lib/auth";
+import { AdminEquipmentDialog, type AdminEquipmentForm } from "./admin-equipment-dialog";
 import { DashboardShell } from "./dashboard-shell";
 import {
   EmptyState,
@@ -78,7 +78,7 @@ function monthLabel(month: string) {
   return Number.isNaN(date.getTime()) ? month : monthFormatter.format(date);
 }
 
-export function AdminDashboard() {
+export function AdminDashboard({ section = "overview" }: { section?: "overview" | "analytics" | "review" | "users" | "equipment" | "rentals" }) {
   const { user, token, isLoading, error, signOut, refreshSession } = useDashboardSession("admin");
   const { notify } = useToast();
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
@@ -90,21 +90,9 @@ export function AdminDashboard() {
   const [dataError, setDataError] = useState("");
   const [busyId, setBusyId] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const [profileName, setProfileName] = useState("");
-  const [profilePhoto, setProfilePhoto] = useState("");
-  const [profilePhone, setProfilePhone] = useState("");
-  const [profileAddress, setProfileAddress] = useState("");
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setProfileName(user.name || "");
-      setProfilePhoto(user.photo || "");
-      setProfilePhone((user as AuthUser & { phone?: string }).phone || "");
-      setProfileAddress((user as AuthUser & { address?: string }).address || "");
-    }
-  }, [user]);
-
+  const [equipmentDialog, setEquipmentDialog] = useState<{ mode: "create" } | { mode: "edit"; item: ManagedEquipment } | null>(null);
+  const [equipmentDialogError, setEquipmentDialogError] = useState("");
+  const [isSavingEquipment, setIsSavingEquipment] = useState(false);
   useEffect(() => {
     if (!token) return;
     let active = true;
@@ -194,27 +182,35 @@ export function AdminDashboard() {
     }
   }
 
-  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!token) return;
-    setIsSavingProfile(true);
+  async function saveEquipment(values: AdminEquipmentForm) {
+    if (!token || isSavingEquipment || !equipmentDialog) return;
+    setIsSavingEquipment(true);
+    setEquipmentDialogError("");
     try {
-      await apiRequest("/profile", {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          name: profileName.trim(),
-          photo: profilePhoto.trim(),
-          phone: profilePhone.trim(),
-          address: profileAddress.trim(),
-        }),
-      });
-      notify("Profile updated.");
-      refreshSession();
+      const headers = { Authorization: `Bearer ${token}` };
+      if (equipmentDialog.mode === "edit") {
+        const { item } = await apiRequest<{ item: ManagedEquipment }>(`/equipment/${equipmentDialog.item.id}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(values),
+        });
+        setAllEquipment((current) => current.map((existing) => existing.id === item.id ? item : existing));
+        setPending((current) => current.map((existing) => existing.id === item.id ? item : existing));
+        notify("Equipment details updated.");
+      } else {
+        const { item } = await apiRequest<{ item: ManagedEquipment }>("/admin/equipment", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(values),
+        });
+        setAllEquipment((current) => [item, ...current]);
+        notify("Equipment added and published to the marketplace.");
+      }
+      setEquipmentDialog(null);
     } catch (saveError) {
-      notify(saveError instanceof Error ? saveError.message : "Could not update profile", "error");
+      setEquipmentDialogError(saveError instanceof Error ? saveError.message : "Could not save equipment.");
     } finally {
-      setIsSavingProfile(false);
+      setIsSavingEquipment(false);
     }
   }
 
@@ -268,8 +264,8 @@ export function AdminDashboard() {
     <DashboardShell
       role="admin"
       user={user}
-      title="Admin dashboard"
-      description="Review listings, manage access, and keep the marketplace running smoothly."
+      title={section === "overview" ? "Admin overview" : section === "analytics" ? "Marketplace analytics" : section === "review" ? "Listing review queue" : section === "users" ? "Users & roles" : section === "equipment" ? "Equipment management" : "Rental management"}
+      description={section === "overview" ? "A quick snapshot of Fieldkit and shortcuts to your admin tools." : section === "analytics" ? "Track bookings and paid revenue across the marketplace." : section === "review" ? "Approve or reject equipment submitted by owners." : section === "users" ? "Manage account roles and access." : section === "equipment" ? "Review, update, and remove marketplace listings." : "Monitor rental booking activity."}
       isLoading={isLoading}
       error={error}
       signOut={signOut}
@@ -277,17 +273,17 @@ export function AdminDashboard() {
     >
       <HeroBanner
         gradient={heroGlow}
-        eyebrow="ADMIN CONTROL CENTER"
-        title={`Welcome back, ${user?.name?.split(" ")[0] || "admin"}.`}
-        description="Here's what's happening across Fieldkit today. Keep the queue clear and make sure great gear gets seen."
-        action={
+        eyebrow={section === "overview" ? "ADMIN CONTROL CENTER" : "ADMIN WORKSPACE"}
+        title={section === "overview" ? `Welcome back, ${user?.name?.split(" ")[0] || "admin"}.` : section === "analytics" ? "Marketplace at a glance" : section === "review" ? "Give new gear a review" : section === "users" ? "Manage workspace access" : section === "equipment" ? "Manage all equipment" : "All rental bookings"}
+        description={section === "overview" ? "Your workspace is organized by task. Choose a section from the sidebar to get started." : section === "analytics" ? "Bookings and confirmed revenue over the last 12 months." : section === "review" ? "Review owner submissions and decide what becomes available." : section === "users" ? "Update user roles and account access." : section === "equipment" ? "Approve, reject, edit, or remove equipment listings." : "Review booking status and marketplace activity."}
+        action={section === "overview" ? (
           <Link
-            href="#review"
+            href="/admin/dashboard/review"
             className={`dashboard-hero-cta inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 ${tone.accentText}`}
           >
             Review pending listings <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
-        }
+        ) : null}
       />
 
       {dataError ? <PanelError message={dataError} /> : null}
@@ -296,13 +292,13 @@ export function AdminDashboard() {
         <PanelLoading label="Loading marketplace analytics..." />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className={section === "overview" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "hidden"}>
             {stats.map((stat, index) => (
               <StatCard key={stat.label} {...stat} {...statPalettes[index % statPalettes.length]} />
             ))}
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-3">
+          <div className={section === "overview" || section === "analytics" ? "grid gap-5 xl:grid-cols-3" : "hidden"}>
             <Panel
               id="analytics"
               title="Marketplace analytics"
@@ -310,7 +306,7 @@ export function AdminDashboard() {
               icon={TrendingUp}
               soft={tone.iconTile}
               accent={tone.panelAccent}
-              className="xl:col-span-2"
+              className={section === "analytics" ? "xl:col-span-3" : "hidden"}
             >
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
@@ -337,13 +333,13 @@ export function AdminDashboard() {
               </div>
             </Panel>
 
-            <Panel title="Quick actions" subtitle="Jump into your most used tools" icon={ShieldCheck} soft={tone.iconTile} accent={tone.panelAccent}>
+            <Panel title="Quick actions" subtitle="Jump into your most used tools" icon={ShieldCheck} soft={tone.iconTile} accent={tone.panelAccent} className={section === "overview" ? "" : "hidden"}>
               <div className="space-y-3">
                 {[
-                  { label: "Review new listings", href: "#review", icon: ClipboardCheck },
-                  { label: "Manage users & roles", href: "#users", icon: Users },
-                  { label: "All equipment", href: "#all-equipment", icon: Package },
-                  { label: "All rentals", href: "#all-rentals", icon: ClipboardCheck },
+                  { label: "Review new listings", href: "/admin/dashboard/review", icon: ClipboardCheck },
+                  { label: "Manage users & roles", href: "/admin/dashboard/users", icon: Users },
+                  { label: "All equipment", href: "/admin/dashboard/equipment", icon: Package },
+                  { label: "All rentals", href: "/admin/dashboard/rentals", icon: ClipboardCheck },
                 ].map((action) => {
                   const Icon = action.icon;
                   return (
@@ -375,6 +371,7 @@ export function AdminDashboard() {
 
           <Panel
             id="review"
+            className={section === "review" ? "" : "hidden"}
             title="Listing review queue"
             subtitle="Approve or reject newly submitted equipment"
             icon={ClipboardCheck}
@@ -458,6 +455,7 @@ export function AdminDashboard() {
 
           <Panel
             id="users"
+            className={section === "users" ? "" : "hidden"}
             title="Users & roles"
             subtitle="Change roles or disable accounts when needed"
             icon={Users}
@@ -555,12 +553,20 @@ export function AdminDashboard() {
 
           <Panel
             id="all-equipment"
+            className={section === "equipment" ? "" : "hidden"}
             title="All equipment"
             subtitle="Approve, reject, update, or delete any listing"
             icon={Package}
             soft={tone.iconTile}
             accent={tone.panelAccent}
-            action={<Badge variant="secondary" className={`h-auto rounded-full px-3 py-1 ${tone.softBadge}`}>{allEquipment.length} items</Badge>}
+            action={(
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className={`h-auto rounded-full px-3 py-1 ${tone.softBadge}`}>{allEquipment.length} items</Badge>
+                <Button type="button" size="sm" onClick={() => { setEquipmentDialogError(""); setEquipmentDialog({ mode: "create" }); }} className={`rounded-xl bg-linear-to-r text-white ${tone.gradient}`}>
+                  <Plus size={15} aria-hidden="true" /> Add equipment
+                </Button>
+              </div>
+            )}
           >
             {allEquipment.length === 0 ? (
               <EmptyState icon={Package} title="No equipment yet" description="Equipment listings will appear here." />
@@ -594,13 +600,7 @@ export function AdminDashboard() {
                             {item.status !== "rejected" ? (
                               <Button size="xs" variant="outline" className="border-[#f0d6d3] text-[#9a3f37] hover:bg-[#fff7f6]" disabled={busyId === item.id} onClick={() => updateRequest(`/admin/equipment/${item.id}/status`, { status: "rejected" }, "Listing rejected.", item.id)}>Reject</Button>
                             ) : null}
-                            <Button size="xs" variant="ghost" disabled={busyId === item.id} onClick={() => {
-                              const name = window.prompt("Equipment name", item.name);
-                              if (name === null) return;
-                              const price = window.prompt("Rental price", String(item.price));
-                              if (price === null) return;
-                              updateRequest(`/equipment/${item.id}`, { name: name.trim(), price: Number(price) }, "Equipment updated.", item.id);
-                            }}><Pencil size={14} /></Button>
+                            <Button size="xs" variant="ghost" aria-label={`Edit ${item.name}`} title="Edit equipment" disabled={busyId === item.id} onClick={() => { setEquipmentDialogError(""); setEquipmentDialog({ mode: "edit", item }); }}><Pencil size={14} /></Button>
                             <Button size="xs" variant="ghost" className="text-[#9a3f37] hover:bg-[#fff7f6]" disabled={busyId === item.id} onClick={() => void deleteEquipment(item.id)}><Trash2 size={14} /></Button>
                           </div>
                         </td>
@@ -614,6 +614,7 @@ export function AdminDashboard() {
 
           <Panel
             id="all-rentals"
+            className={section === "rentals" ? "" : "hidden"}
             title="All rentals"
             subtitle="Monitor all rental booking activity"
             icon={ClipboardCheck}
@@ -675,44 +676,21 @@ export function AdminDashboard() {
             )}
           </Panel>
 
-          <Panel
-            id="profile"
-            title="My profile"
-            subtitle="Update your admin profile information"
-            icon={ShieldCheck}
-            soft={tone.iconTile}
-            accent={tone.panelAccent}
-          >
-            <form className="grid max-w-2xl gap-4 md:grid-cols-2" onSubmit={saveProfile}>
-              <div className="grid gap-2">
-                <Label htmlFor="admin-name" className="text-xs font-semibold text-slate-700">Name</Label>
-                <Input id="admin-name" value={profileName} onChange={(e) => setProfileName(e.target.value)} required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="admin-email" className="text-xs font-semibold text-slate-700">Email</Label>
-                <Input id="admin-email" value={user?.email || ""} readOnly />
-              </div>
-              <div className="grid gap-2 md:col-span-2">
-                <Label htmlFor="admin-photo" className="text-xs font-semibold text-slate-700">Profile image URL</Label>
-                <Input id="admin-photo" value={profilePhoto} onChange={(e) => setProfilePhoto(e.target.value)} placeholder="https://..." />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="admin-phone" className="text-xs font-semibold text-slate-700">Phone number</Label>
-                <Input id="admin-phone" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="admin-address" className="text-xs font-semibold text-slate-700">Address</Label>
-                <Input id="admin-address" value={profileAddress} onChange={(e) => setProfileAddress(e.target.value)} />
-              </div>
-              <div className="md:col-span-2">
-                <Button type="submit" disabled={isSavingProfile} className={`bg-linear-to-r text-white ${tone.gradient}`}>
-                  {isSavingProfile ? "Saving..." : "Save profile"}
-                </Button>
-              </div>
-            </form>
-          </Panel>
-        </>
+      </>
       )}
+      <AdminEquipmentDialog
+        open={Boolean(equipmentDialog)}
+        item={equipmentDialog?.mode === "edit" ? equipmentDialog.item : undefined}
+        error={equipmentDialogError}
+        isSaving={isSavingEquipment}
+        onOpenChange={(open) => {
+          if (!open && !isSavingEquipment) {
+            setEquipmentDialog(null);
+            setEquipmentDialogError("");
+          }
+        }}
+        onSubmit={saveEquipment}
+      />
     </DashboardShell>
   );
 }

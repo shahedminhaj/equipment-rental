@@ -10,7 +10,6 @@ import {
   Package,
   Plus,
   TrendingUp,
-  Users,
   Wallet,
   X,
 } from "lucide-react";
@@ -22,7 +21,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { appSurfaces, roleTones } from "../data/app-theme";
 import { apiRequest, formatCurrency, type EquipmentListing } from "../lib/api";
-import type { AuthUser } from "../lib/auth";
 import { DashboardShell } from "./dashboard-shell";
 import {
   EmptyState,
@@ -73,7 +71,7 @@ function monthLabel(month: string) {
   return Number.isNaN(date.getTime()) ? month : monthFormatter.format(date);
 }
 
-export function OwnerDashboard() {
+export function OwnerDashboard({ section = "overview" }: { section?: "overview" | "earnings" | "listings" | "bookings" }) {
   const { user, token, isLoading, error, signOut, refreshSession } = useDashboardSession("owner");
   const { notify } = useToast();
   const [analytics, setAnalytics] = useState<OwnerAnalytics | null>(null);
@@ -87,21 +85,6 @@ export function OwnerDashboard() {
   const [listingImage, setListingImage] = useState("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [profileName, setProfileName] = useState("");
-  const [profilePhoto, setProfilePhoto] = useState("");
-  const [profilePhone, setProfilePhone] = useState("");
-  const [profileAddress, setProfileAddress] = useState("");
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setProfileName(user.name || "");
-      setProfilePhoto(user.photo || "");
-      setProfilePhone((user as AuthUser & { phone?: string }).phone || "");
-      setProfileAddress((user as AuthUser & { address?: string }).address || "");
-    }
-  }, [user]);
-
   useEffect(() => {
     if (!token) return;
     let active = true;
@@ -204,30 +187,6 @@ export function OwnerDashboard() {
     }
   }
 
-  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!token) return;
-    setIsSavingProfile(true);
-    try {
-      await apiRequest("/profile", {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          name: profileName.trim(),
-          photo: profilePhoto.trim(),
-          phone: profilePhone.trim(),
-          address: profileAddress.trim(),
-        }),
-      });
-      notify("Profile updated.");
-      refreshSession();
-    } catch (saveError) {
-      notify(saveError instanceof Error ? saveError.message : "Could not update profile", "error");
-    } finally {
-      setIsSavingProfile(false);
-    }
-  }
-
   async function createListing(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!token || busyId) return;
@@ -308,8 +267,8 @@ export function OwnerDashboard() {
     <DashboardShell
       role="owner"
       user={user}
-      title="Owner dashboard"
-      description="Grow your rental business — manage listings, earnings, and incoming requests."
+      title={section === "overview" ? "Owner overview" : section === "earnings" ? "Earnings" : section === "listings" ? "My listings" : "Bookings"}
+      description={section === "overview" ? "A quick look at your rental business. Choose a workspace section to manage details." : section === "earnings" ? "Track completed rentals and monthly earnings." : section === "listings" ? "Create and update equipment listings for your rental business." : "Review paid booking requests and rental status."}
       isLoading={isLoading}
       error={error}
       signOut={signOut}
@@ -317,10 +276,10 @@ export function OwnerDashboard() {
     >
       <HeroBanner
         gradient={heroGlow}
-        eyebrow="OWNER STUDIO"
-        title={`Good to see you, ${user?.name?.split(" ")[0] || "owner"}.`}
-        description="Your gear is working for you. Keep your listings fresh and respond to requests quickly to earn more."
-        action={
+        eyebrow={section === "overview" ? "OWNER STUDIO" : "OWNER WORKSPACE"}
+        title={section === "overview" ? `Good to see you, ${user?.name?.split(" ")[0] || "owner"}.` : section === "earnings" ? "Your rental earnings" : section === "listings" ? "Manage your equipment" : "Incoming bookings"}
+        description={section === "overview" ? "Your workspace is organized by task. Pick a section from the sidebar to get started." : section === "earnings" ? "See how your rental business is performing over time." : section === "listings" ? "Create listings, update prices and quantities, and remove outdated gear." : "Respond to paid rental requests and keep bookings up to date."}
+        action={section === "listings" ? (
           <Button
             type="button"
             onClick={() => setShowCreateForm((current) => !current)}
@@ -329,12 +288,12 @@ export function OwnerDashboard() {
             {showCreateForm ? <X size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
             {showCreateForm ? "Close form" : "List new equipment"}
           </Button>
-        }
+        ) : null}
       />
 
       {dataError ? <PanelError message={dataError} /> : null}
 
-      {showCreateForm ? (
+      {section === "listings" && showCreateForm ? (
         <Panel title="Create a listing" subtitle="New listings go live after admin approval" icon={Plus} soft={tone.iconTile} accent={tone.panelAccent}>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={createListing}>
             <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
@@ -446,13 +405,13 @@ export function OwnerDashboard() {
         <PanelLoading label="Loading your owner workspace..." />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className={section === "overview" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-4" : "hidden"}>
             {stats.map((stat, index) => (
               <StatCard key={stat.label} {...stat} {...statPalettes[index % statPalettes.length]} />
             ))}
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-3">
+          <div className={section === "overview" || section === "earnings" ? "grid gap-5 xl:grid-cols-3" : "hidden"}>
             <Panel
               id="analytics"
               title="Earnings overview"
@@ -460,7 +419,7 @@ export function OwnerDashboard() {
               icon={TrendingUp}
               soft={tone.iconTile}
               accent={tone.panelAccent}
-              className="xl:col-span-2"
+              className={section === "earnings" ? "xl:col-span-3" : "hidden"}
             >
               <MiniBars
                 color={tone.bar}
@@ -471,7 +430,7 @@ export function OwnerDashboard() {
                 }))}
               />
             </Panel>
-            <Panel title="Business tips" subtitle="Small moves, bigger returns" icon={CircleDollarSign} soft={tone.iconTile} accent={tone.panelAccent}>
+            <Panel title="Business tips" subtitle="Small moves, bigger returns" icon={CircleDollarSign} soft={tone.iconTile} accent={tone.panelAccent} className={section === "overview" ? "" : "hidden"}>
               <ul className="space-y-3 text-sm leading-relaxed text-slate-600">
                 {[
                   "Approved listings appear in marketplace search instantly.",
@@ -495,6 +454,7 @@ export function OwnerDashboard() {
 
           <Panel
             id="inventory"
+            className={section === "listings" ? "" : "hidden"}
             title="My listings"
             subtitle="Edit prices, quantities, and remove outdated equipment"
             icon={Package}
@@ -620,6 +580,7 @@ export function OwnerDashboard() {
 
           <Panel
             id="bookings"
+            className={section === "bookings" ? "" : "hidden"}
             title="Rental requests"
             subtitle="Paid bookings for your equipment"
             icon={CalendarDays}
@@ -708,42 +669,6 @@ export function OwnerDashboard() {
             )}
           </Panel>
 
-          <Panel
-            id="profile"
-            title="My profile"
-            subtitle="Update your owner profile information"
-            icon={Users}
-            soft={tone.iconTile}
-            accent={tone.panelAccent}
-          >
-            <form className="grid max-w-2xl gap-4 md:grid-cols-2" onSubmit={saveProfile}>
-              <div className="grid gap-2">
-                <Label htmlFor="owner-name" className="text-xs font-semibold text-slate-700">Name</Label>
-                <Input id="owner-name" value={profileName} onChange={(e) => setProfileName(e.target.value)} required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="owner-email" className="text-xs font-semibold text-slate-700">Email</Label>
-                <Input id="owner-email" value={user?.email || ""} readOnly />
-              </div>
-              <div className="grid gap-2 md:col-span-2">
-                <Label htmlFor="owner-photo" className="text-xs font-semibold text-slate-700">Profile image URL</Label>
-                <Input id="owner-photo" value={profilePhoto} onChange={(e) => setProfilePhoto(e.target.value)} placeholder="https://..." />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="owner-phone" className="text-xs font-semibold text-slate-700">Phone number</Label>
-                <Input id="owner-phone" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="owner-address" className="text-xs font-semibold text-slate-700">Address</Label>
-                <Input id="owner-address" value={profileAddress} onChange={(e) => setProfileAddress(e.target.value)} />
-              </div>
-              <div className="md:col-span-2">
-                <Button type="submit" disabled={isSavingProfile} className={`bg-linear-to-r text-white ${tone.gradient}`}>
-                  {isSavingProfile ? "Saving..." : "Save profile"}
-                </Button>
-              </div>
-            </form>
-          </Panel>
         </>
       )}
     </DashboardShell>
