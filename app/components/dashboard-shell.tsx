@@ -749,7 +749,7 @@ export function DashboardShell({
                     setNotificationsOpen(false);
                     setProfileOpen((open) => !open);
                   }}
-                  className="h-11 gap-2 rounded-xl border-[#dfe6d8] bg-white py-1.5 pr-2.5 pl-1.5 text-left hover:bg-[#f8faf6]"
+                  className="h-11 cursor-pointer gap-2 rounded-xl border-[#dfe6d8] bg-white py-1.5 pr-2.5 pl-1.5 text-left hover:bg-[#f8faf6] focus-visible:ring-2 focus-visible:ring-[#cfe0bf]"
                 >
                   <Avatar className={cn("size-10 rounded-full after:rounded-full bg-linear-to-br", tone.gradient)}>
                     {user?.photo ? <AvatarImage src={user.photo} alt={user.name || "Account"} /> : null}
