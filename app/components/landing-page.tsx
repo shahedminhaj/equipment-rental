@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 import { getCategoryVisual } from "../data/category-visuals";
-import type { LandingCategory, LandingData } from "../data/landing-data";
+import type { LandingCategory, LandingData, LandingReview } from "../data/landing-data";
 import { siteContent, type StatKey } from "../data/site-content";
 import { Reveal, StaggerGroup, StaggerItem } from "./animations";
 import { extraIcons, LandingIcon } from "./landing/icons";
@@ -601,7 +601,7 @@ function HowSection() {
   );
 }
 
-function ReviewsSection() {
+function ReviewsSection({ reviews }: { reviews: LandingReview[] }) {
   const content = siteContent.reviews;
 
   return (
@@ -616,20 +616,21 @@ function ReviewsSection() {
           />
         </Reveal>
 
-        <StaggerGroup className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {content.items.map((review) => (
-            <StaggerItem key={review.name}>
+        {reviews.length ? (
+          <StaggerGroup className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {reviews.slice(0, 8).map((review, index) => (
+            <StaggerItem key={review.id}>
               <Card className="relative h-full gap-0 overflow-hidden rounded-3xl border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1.5 hover:shadow-xl">
                 <LandingIcon
                   name="quote"
                   className="absolute top-5 right-5 size-8 text-violet-100"
                 />
                 <div className="flex gap-0.5 text-amber-400" aria-label={`${review.rating} out of 5 stars`}>
-                  {Array.from({ length: 5 }).map((_, index) => (
+                  {Array.from({ length: 5 }).map((_, starIndex) => (
                     <LandingIcon
-                      key={index}
+                      key={starIndex}
                       name="star"
-                      className="size-3.5 fill-current"
+                      className={cn("size-3.5", starIndex < Math.round(review.rating) && "fill-current")}
                     />
                   ))}
                   <span className="ml-1.5 text-[11px] font-bold text-slate-500">
@@ -645,23 +646,30 @@ function ReviewsSection() {
                     <AvatarFallback
                       className={cn(
                         "bg-linear-to-br text-[11px] font-bold text-white",
-                        review.tone
+                        ["from-violet-500 to-fuchsia-500", "from-sky-500 to-blue-500", "from-emerald-500 to-lime-500", "from-orange-500 to-rose-500"][index % 4]
                       )}
                     >
-                      {review.initials}
+                      {review.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-slate-900">{review.name}</p>
-                    <p className="truncate text-[11px] text-slate-500">{review.role}</p>
+                    <p className="truncate text-[11px] text-slate-500">{review.role || "Verified renter"}</p>
                   </div>
                   <extraIcons.BadgeCheck className="ml-auto size-4 shrink-0 text-violet-600" />
                 </div>
               </Card>
             </StaggerItem>
           ))}
-        </StaggerGroup>
-        <p className="mt-8 text-center text-[11px] text-slate-400">{content.note}</p>
+          </StaggerGroup>
+        ) : (
+          <Card className="mt-12 border-dashed bg-white/70 py-10 text-center">
+            <CardHeader>
+              <CardTitle>Customer stories are on the way.</CardTitle>
+              <CardDescription>Reviews will appear here after completed rentals.</CardDescription>
+            </CardHeader>
+          </Card>
+        )}
       </div>
     </section>
   );
@@ -764,7 +772,7 @@ export function LandingPage({ data }: { data: LandingData }) {
         <FeaturedSection items={data.featured} />
         <WhySection />
         <HowSection />
-        <ReviewsSection />
+        <ReviewsSection reviews={data.reviews} />
         <FaqSection />
         <CtaSection />
       </main>

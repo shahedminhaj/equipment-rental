@@ -109,9 +109,8 @@ export const siteContent = {
       key: "savings" as const,
       icon: "leaf" as IconKey,
       prefix: "",
-      suffix: "%",
-      label: "less than buying new",
-      value: "64",
+      suffix: "",
+      label: "rental savings tracked",
       tone: "from-emerald-500 to-lime-400",
     },
   ],
@@ -202,45 +201,6 @@ export const siteContent = {
     eyebrow: "GOOD WORDS FROM GOOD PEOPLE",
     title: "Projects made possible.",
     description: "A little less buying. A lot more getting things done.",
-    items: [
-      {
-        quote:
-          "Found the exact camera setup I needed for a weekend shoot. Booking was straightforward and the owner was lovely.",
-        name: "Nusrat Jahan",
-        role: "Photographer, Dhaka",
-        initials: "NJ",
-        rating: "5.0",
-        tone: "from-violet-500 to-fuchsia-500",
-      },
-      {
-        quote:
-          "We rented a mini excavator for a home project instead of buying one. It saved us time, money, and a lot of hassle.",
-        name: "Arif Rahman",
-        role: "Homeowner, Chattogram",
-        initials: "AR",
-        rating: "5.0",
-        tone: "from-sky-500 to-blue-500",
-      },
-      {
-        quote:
-          "I listed equipment that was sitting unused in my workshop. It is now earning for me every single month.",
-        name: "Maliha Chowdhury",
-        role: "Equipment owner, Dhaka",
-        initials: "MC",
-        rating: "4.9",
-        tone: "from-emerald-500 to-lime-500",
-      },
-      {
-        quote:
-          "The flexible rental period made it easy to get our community event ready without overspending on gear.",
-        name: "Tanvir Hasan",
-        role: "Event organizer, Sylhet",
-        initials: "TH",
-        rating: "5.0",
-        tone: "from-orange-500 to-rose-500",
-      },
-    ],
-    note: "Customer stories shown here are illustrative examples.",
   },
   faq: {
     eyebrow: "GOOD TO KNOW",

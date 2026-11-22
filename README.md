@@ -8,8 +8,9 @@ dashboards.
 ## Features
 
 - **Marketplace:** responsive home page with live featured approved equipment,
-  live categories, customer stories, Framer Motion animations, and a shared
-  shadcn-style design system.
+  live categories, completed-rental customer reviews, Framer Motion animations,
+  and a shared shadcn-style design system. Catalog, category, review, rating,
+  and savings figures are never replaced with demo records when the API is down.
 - **Catalog:** `/equipment` with server-side search, category and rental-type
   filters, price/availability filters, sorting, and pagination through
   `GET /api/equipment`.
@@ -31,7 +32,7 @@ dashboards.
 
 ## Getting started
 
-Requirements: Node.js 20+ and the companion backend running with MongoDB.
+Requirements: Node.js 20+, MongoDB, and a Stripe account for live payments.
 
 ```bash
 npm ci
@@ -52,16 +53,45 @@ NEXT_PUBLIC_IMGBB_API_KEY=your-imgbb-api-key
 the same client ID in the backend `.env`. Keep database, JWT, admin, and Stripe
 secrets in the backend `.env`; never expose them in a `NEXT_PUBLIC_` variable.
 
+### Backend setup
+
+The Express/MongoDB API is in `server/`. Copy `server/.env.example` to
+`server/.env`, add a unique random `JWT_SECRET` (at least 32 characters), and set
+the MongoDB URI, frontend origin, and administrator credentials. The server creates
+the configured administrator account at startup. The file is ignored by Git.
+
+In a second terminal, install and run the API from its own folder:
+
+```bash
+cd server
+npm ci
+npm run dev
+```
+
+The API listens on port 5000 by default. Its role middleware protects owner, customer,
+and admin routes; public signup and Google sign-in always create customer
+accounts. Admins can promote users to owners from the admin dashboard.
+
 ### Booking and Stripe payment
 
 The booking dialog posts the rental details to `POST /api/bookings` with the
-customer's JWT. The backend creates the reservation and the Stripe Checkout
-session, then returns `checkoutUrl`; the browser redirects to
+customer's JWT. The backend checks date and quantity availability, creates the
+reservation and Stripe Checkout session, then returns `checkoutUrl`; the browser redirects to
 `checkout.stripe.com`. `STRIPE_SECRET_KEY`, `STRIPE_CURRENCY`, and
-`STRIPE_WEBHOOK_SECRET` belong only in the backend `.env`, so the frontend does
-not need a Stripe SDK or publishable key. Stripe returns the customer to
+`STRIPE_WEBHOOK_SECRET` belong only in `server/.env`, so the frontend does not
+need a Stripe SDK or publishable key. Configure the Stripe webhook at
+`/api/payments/webhook` for Checkout completion, expiration, and payment failure.
+The webhook records the transaction and updates the booking payment status.
+Stripe returns the customer to
 `/payment/success` or `/payment/cancel`, which verify or release the temporary
 booking through the API.
+
+The API includes customer favorites and reviews, owner inventory and rental
+management, admin user/listing/rental management, and MongoDB-backed admin and
+owner analytics. A daily `node-cron` task completes ended confirmed rentals.
+If SMTP settings are configured, it emails the renter and owner after completion.
+The dashboard notification menu is intentionally static and shows platform
+guidance rather than account-specific events.
 
 Google sign-in also requires the page origin to be registered on **that exact
 OAuth client** in Google Cloud Console → APIs & Services → Credentials → OAuth
@@ -112,6 +142,8 @@ approved listings when the equipment collection is empty.
 ## Scripts
 
 - `npm run dev` — start the development server
+- `npm run dev:server` — start the Express API in watch mode
+- `npm run start:server` — start the Express API
 - `npm run build` — create a production build
 - `npm start` — serve the production build
 - `npm run lint` — run ESLint
@@ -124,6 +156,10 @@ approved listings when the equipment collection is empty.
 - Framer Motion for section animations
 - Lucide React icons and `class-variance-authority` for variant styling
 - ESLint for linting
+- Express, MongoDB Node driver, Stripe, bcryptjs, jsonwebtoken, and Google Auth
+  Library for the API and authentication
+- Helmet, CORS, and express-rate-limit for API protections
+- node-cron and Nodemailer for rental completion and optional email notices
 
 ## Deployment
 
@@ -132,3 +168,11 @@ Live site: add your deployed frontend URL here before submission.
 For deployment, set `NEXT_PUBLIC_API_URL` to the public backend `/api` origin and
 configure the same Google client ID, imgbb key, and Stripe/backend settings used
 by the API.
+
+### Landing page data contract
+
+The landing page reads `GET /reviews/featured`, which returns
+`{ "items": [{ "id": "...", "name": "...", "role": "...", "quote": "...", "rating": 5 }] }`.
+Reviews are submitted from completed rentals and only contain genuine customer
+feedback. If no reviews exist, the page shows an empty state instead of sample
+testimonials. The API enforces one review per completed booking.

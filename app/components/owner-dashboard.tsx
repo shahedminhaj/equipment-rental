@@ -237,6 +237,9 @@ export function OwnerDashboard() {
       rentalType: String(data.get("rentalType")),
       availableQuantity: Number(data.get("availableQuantity")),
       condition: String(data.get("condition") || "").trim(),
+      brand: String(data.get("brand") || "").trim(),
+      model: String(data.get("model") || "").trim(),
+      rentalTerms: String(data.get("rentalTerms") || "").split("\n").map((term) => term.trim()).filter(Boolean),
     };
 
     setBusyId("new-listing");
@@ -335,7 +338,15 @@ export function OwnerDashboard() {
             </Label>
             <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Category
-              <Input className="h-9" name="category" required maxLength={100} placeholder="e.g. Construction" />
+              <select name="category" required defaultValue="" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-200">
+                <option value="" disabled>Select a category</option>
+                <option>Construction Equipment</option>
+                <option>Photography Equipment</option>
+                <option>Vehicles &amp; Transportation</option>
+                <option>Agriculture Equipment</option>
+                <option>Electronics</option>
+                <option>Event Equipment</option>
+              </select>
             </Label>
             <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Location
@@ -377,11 +388,19 @@ export function OwnerDashboard() {
             </Label>
             <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Available quantity
-              <Input className="h-9" name="availableQuantity" type="number" min="0" defaultValue="1" required />
+              <Input className="h-9" name="availableQuantity" type="number" min="1" defaultValue="1" required />
             </Label>
             <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Condition
               <Input className="h-9" name="condition" maxLength={200} placeholder="e.g. Excellent" />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
+              Brand
+              <Input className="h-9" name="brand" required maxLength={100} placeholder="e.g. Kubota" />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
+              Model
+              <Input className="h-9" name="model" required maxLength={100} placeholder="e.g. U17-3" />
             </Label>
             <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600 md:col-span-2">
               Description
@@ -389,6 +408,18 @@ export function OwnerDashboard() {
                 name="description"
                 rows={3}
                 maxLength={5000}
+                required
+                className="w-full rounded-lg border border-slate-200 bg-transparent px-2.5 py-2 text-sm text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-200"
+              />
+            </Label>
+            <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600 md:col-span-2">
+              Rental terms and conditions (one per line)
+              <textarea
+                name="rentalTerms"
+                rows={3}
+                maxLength={2000}
+                required
+                placeholder="Return the equipment in good condition.&#10;Bring a valid photo ID at pickup."
                 className="w-full rounded-lg border border-slate-200 bg-transparent px-2.5 py-2 text-sm text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-200"
               />
             </Label>
@@ -494,6 +525,11 @@ export function OwnerDashboard() {
                           <h3 className="text-sm font-semibold text-slate-900">{item.name}</h3>
                           <StatusPill value={item.status} />
                         </div>
+                        {item.status === "approved" ? (
+                          <Link href={`/equipment/${item.id}`} className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${tone.accentText}`}>
+                            View details <ArrowUpRight size={13} aria-hidden="true" />
+                          </Link>
+                        ) : null}
                         <p className="mt-1 text-xs text-slate-500">
                           {item.category} · {item.location}
                         </p>

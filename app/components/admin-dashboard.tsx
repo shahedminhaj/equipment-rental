@@ -627,6 +627,7 @@ export function AdminDashboard() {
                       <th className="px-4 py-3 font-bold">Amount</th>
                       <th className="px-4 py-3 font-bold">Payment</th>
                       <th className="px-4 py-3 font-bold">Booking</th>
+                      <th className="px-4 py-3 font-bold">Manage</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -639,6 +640,25 @@ export function AdminDashboard() {
                         <td className="px-4 py-3 text-xs">{formatCurrency(booking.totalAmount)}</td>
                         <td className="px-4 py-3"><StatusPill value={booking.paymentStatus} /></td>
                         <td className="px-4 py-3"><StatusPill value={booking.bookingStatus} /></td>
+                        <td className="px-4 py-3">
+                          {!["completed", "cancelled", "rejected"].includes(booking.bookingStatus) ? (
+                            <select
+                              aria-label={`Update booking status for ${booking.equipment?.name || "equipment"}`}
+                              value=""
+                              disabled={busyId === booking.id}
+                              onChange={(event) => {
+                                const bookingStatus = event.target.value;
+                                if (bookingStatus) updateRequest(`/bookings/${booking.id}/status`, { bookingStatus }, `Booking ${bookingStatus}.`, booking.id);
+                              }}
+                              className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700"
+                            >
+                              <option value="">Change status</option>
+                              <option value="confirmed">Confirm</option>
+                              <option value="completed">Mark complete</option>
+                              <option value="cancelled">Cancel</option>
+                            </select>
+                          ) : <span className="text-xs text-slate-400">No actions</span>}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

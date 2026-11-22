@@ -125,6 +125,7 @@ export function DashboardShell({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeResult, setActiveResult] = useState(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const theme = themes[role];
@@ -462,22 +463,62 @@ export function DashboardShell({
                 ) : null}
               </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-lg"
-                aria-label="Notifications"
-                className="relative rounded-xl border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-              >
-                <Bell size={17} aria-hidden="true" />
-                <span
-                  className={cn(
-                    "absolute top-2 right-2 size-2 rounded-full bg-linear-to-br ring-2 ring-white",
-                    tone.gradient,
-                  )}
-                  aria-hidden="true"
-                />
-              </Button>
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-lg"
+                  aria-label="Notifications"
+                  aria-expanded={notificationsOpen}
+                  aria-controls="dashboard-notifications"
+                  onClick={() => setNotificationsOpen((open) => !open)}
+                  className="relative rounded-xl border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                >
+                  <Bell size={17} aria-hidden="true" />
+                  <span
+                    className={cn(
+                      "absolute top-2 right-2 size-2 rounded-full bg-linear-to-br ring-2 ring-white",
+                      tone.gradient,
+                    )}
+                    aria-hidden="true"
+                  />
+                </Button>
+                {notificationsOpen ? (
+                  <section
+                    id="dashboard-notifications"
+                    aria-label="Platform notifications"
+                    className="absolute top-12 right-0 z-50 w-[min(21rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-xl"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                      <div>
+                        <h2 className="text-sm font-bold text-slate-900">Platform updates</h2>
+                        <p className="mt-0.5 text-[11px] text-slate-500">Static help and policy notes</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNotificationsOpen(false)}
+                        className="rounded-lg px-2 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-50"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <ul className="divide-y divide-slate-100">
+                      <li className="px-4 py-3">
+                        <p className="text-xs font-semibold text-slate-800">Secure checkout</p>
+                        <p className="mt-1 text-[11px] leading-5 text-slate-500">Payments are completed through Stripe Checkout.</p>
+                      </li>
+                      <li className="px-4 py-3">
+                        <p className="text-xs font-semibold text-slate-800">Listing review</p>
+                        <p className="mt-1 text-[11px] leading-5 text-slate-500">New owner listings become visible after admin approval.</p>
+                      </li>
+                      <li className="px-4 py-3">
+                        <p className="text-xs font-semibold text-slate-800">Rental status</p>
+                        <p className="mt-1 text-[11px] leading-5 text-slate-500">Track payment and booking status from your dashboard.</p>
+                      </li>
+                    </ul>
+                  </section>
+                ) : null}
+              </div>
               <div className="hidden items-center gap-2.5 rounded-xl border border-slate-200 bg-white py-1.5 pr-3 pl-1.5 sm:flex">
                 <Avatar className={cn("size-8 rounded-lg after:rounded-lg", "bg-linear-to-br", tone.gradient)}>
                   {user?.photo ? <AvatarImage src={user.photo} alt={user.name || "Account"} /> : null}

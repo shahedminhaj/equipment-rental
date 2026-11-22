@@ -66,6 +66,7 @@ type AccountData = {
   bookings: Booking[];
   payments: Payment[];
   favorites: Favorite[];
+  reviewedBookingIds: string[];
 };
 
 type AuthResponse = {
@@ -77,18 +78,20 @@ async function loadAccountData(token: string): Promise<AccountData> {
   const headers = { Authorization: `Bearer ${token}` };
   const profile = await apiRequest<{ user: AccountUser }>("/profile", { headers });
   if (profile.user.role !== "customer") {
-    return { user: profile.user, bookings: [], payments: [], favorites: [] };
+    return { user: profile.user, bookings: [], payments: [], favorites: [], reviewedBookingIds: [] };
   }
-  const [bookings, payments, favorites] = await Promise.all([
+  const [bookings, payments, favorites, reviews] = await Promise.all([
     apiRequest<{ items: Booking[] }>("/bookings/mine", { headers }),
     apiRequest<{ items: Payment[] }>("/payments/mine", { headers }),
     apiRequest<{ items: Favorite[] }>("/favorites", { headers }),
+    apiRequest<{ items: { bookingId: string }[] }>("/reviews/mine", { headers }),
   ]);
   return {
     user: profile.user,
     bookings: bookings.items,
     payments: payments.items,
     favorites: favorites.items,
+    reviewedBookingIds: reviews.items.map((review) => review.bookingId),
   };
 }
 
@@ -153,6 +156,11 @@ export function AccountDashboard({
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [reviewedBookingIds, setReviewedBookingIds] = useState<string[]>([]);
+  const [reviewingBookingId, setReviewingBookingId] = useState("");
+  const [reviewRating, setReviewRating] = useState("5");
+  const [reviewQuote, setReviewQuote] = useState("");
+  const [bookingPage, setBookingPage] = useState(1);
   const [view, setView] = useState(initialView);
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -200,7 +208,8 @@ export function AccountDashboard({
         setAddress(account.user.address || "");
         setBookings(account.bookings);
         setPayments(account.payments);
-      setFavorites(account.favorites);
+        setFavorites(account.favorites);
+        setReviewedBookingIds(account.reviewedBookingIds);
         setAccountDataLoaded(true);
       } catch (loadError) {
         if (!cancelled) {
@@ -287,6 +296,7 @@ export function AccountDashboard({
       setBookings(account.bookings);
       setPayments(account.payments);
       setFavorites(account.favorites);
+      setReviewedBookingIds(account.reviewedBookingIds);
       setAccountDataLoaded(true);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load your account.");
@@ -378,6 +388,28 @@ export function AccountDashboard({
     }
   }
 
+  async function submitReview(event: FormEvent<HTMLFormElement>, bookingId: string) {
+    event.preventDefault();
+    if (!token || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await apiRequest("/reviews", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ bookingId, rating: Number(reviewRating), quote: reviewQuote.trim() }),
+      });
+      setReviewedBookingIds((current) => [...current, bookingId]);
+      setReviewingBookingId("");
+      setReviewQuote("");
+      setReviewRating("5");
+      notify("Thanks for sharing your rental experience.");
+    } catch (reviewError) {
+      notify(reviewError instanceof Error ? reviewError.message : "Could not submit your review.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   function signOut() {
     clearAuth();
     setToken("");
@@ -385,6 +417,8 @@ export function AccountDashboard({
     setBookings([]);
     setPayments([]);
     setFavorites([]);
+    setReviewedBookingIds([]);
+    setReviewingBookingId("");
     setReceiptBooking(null);
     setIsAuthenticated(false);
     setAccountDataLoaded(false);
@@ -813,7 +847,7 @@ export function AccountDashboard({
                     <CardContent className="p-6 pt-5 sm:p-7 sm:pt-6">
                       {bookings.length ? (
                         <div className="grid gap-3">
-                          {bookings.map((booking) => {
+                          {bookings.slice((bookingPage - 1) * 6, bookingPage * 6).map((booking) => {
                             const payment = payments.find((item) => String(item.bookingId) === booking.id);
                             return (
                               <article
@@ -880,9 +914,54 @@ export function AccountDashboard({
                                     View / print payment receipt
                                   </Button>
                                 )}
+                                {booking.bookingStatus === "completed" && booking.paymentStatus === "paid" ? (
+                                  reviewedBookingIds.includes(booking.id) ? (
+                                    <Badge variant="outline" className="mt-4 ml-2 rounded-full border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-700">
+                                      Review submitted
+                                    </Badge>
+                                  ) : (
+                                    <div className="mt-4">
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setReviewingBookingId((current) => current === booking.id ? "" : booking.id)}
+                                        className="h-9 rounded-full border-violet-200 bg-violet-50/60 text-violet-700 hover:bg-violet-100"
+                                      >
+                                        {reviewingBookingId === booking.id ? "Close review" : "Leave a review"}
+                                      </Button>
+                                      {reviewingBookingId === booking.id ? (
+                                        <form onSubmit={(event) => void submitReview(event, booking.id)} className="mt-3 grid gap-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
+                                          <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                                            Your rating
+                                            <select value={reviewRating} onChange={(event) => setReviewRating(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800">
+                                              {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} out of 5</option>)}
+                                            </select>
+                                          </label>
+                                          <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                                            Share your rental experience
+                                            <textarea value={reviewQuote} onChange={(event) => setReviewQuote(event.target.value)} required minLength={10} maxLength={1000} rows={3} className="resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-violet-200" placeholder="What went well?" />
+                                          </label>
+                                          <Button type="submit" size="sm" disabled={isSubmitting || reviewQuote.trim().length < 10} className={cn("w-fit rounded-full text-white", publicTone.gradient)}>
+                                            {isSubmitting ? "Submitting..." : "Submit review"}
+                                          </Button>
+                                        </form>
+                                      ) : null}
+                                    </div>
+                                  )
+                                ) : null}
                               </article>
                             );
                           })}
+                          {bookings.length > 6 ? (
+                            <div className="flex items-center justify-between gap-3 pt-2">
+                              <p className="text-xs text-slate-500">Page {bookingPage} of {Math.ceil(bookings.length / 6)}</p>
+                              <div className="flex gap-2">
+                                <Button type="button" size="sm" variant="outline" disabled={bookingPage === 1} onClick={() => setBookingPage((page) => Math.max(1, page - 1))}>Previous</Button>
+                                <Button type="button" size="sm" variant="outline" disabled={bookingPage >= Math.ceil(bookings.length / 6)} onClick={() => setBookingPage((page) => Math.min(Math.ceil(bookings.length / 6), page + 1))}>Next</Button>
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       ) : (
                         <div className="grid justify-items-start gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6">
