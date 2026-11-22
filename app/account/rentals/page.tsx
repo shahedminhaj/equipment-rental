@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { AccountDashboard } from "../../components/account-dashboard";
-import { SiteFooter, SiteHeader } from "../../components/site-shell";
+import { CustomerRentals } from "../../components/customer-rentals";
 
 export const metadata: Metadata = {
   title: "My Rentals | Fieldkit",
@@ -8,11 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function MyRentalsPage() {
-  return (
-    <>
-      <SiteHeader />
-      <AccountDashboard initialView="rentals" />
-      <SiteFooter />
-    </>
-  );
+  return <CustomerRentals />;
 }

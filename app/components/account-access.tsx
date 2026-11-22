@@ -33,16 +33,16 @@ const fieldClass = "grid gap-2";
 
 const inputClass = cn(
   "h-11 rounded-xl border-slate-200 bg-slate-50/80 px-3.5 text-sm text-slate-900 shadow-sm transition-colors",
-  "placeholder:text-slate-400 focus-visible:border-violet-400 focus-visible:ring-3 focus-visible:ring-violet-200/60",
+  "placeholder:text-slate-400 focus-visible:border-[#7ba356] focus-visible:ring-3 focus-visible:ring-[#cfe0bf]/60",
   "read-only:bg-slate-100/80 read-only:text-slate-500",
 );
 
 const primaryButtonClass = cn(
-  "h-11 w-full rounded-full px-6 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25",
+  "h-11 w-full rounded-full px-6 text-sm font-semibold text-white shadow-lg shadow-[#315c3c]/20",
   "transition-all hover:-translate-y-0.5",
   "bg-linear-to-r",
   publicTone.gradient,
-  "hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+  "hover:from-[#3a6a45] hover:via-[#5b8249] hover:to-[#8fb361]",
 );
 
 const authSteps = [
@@ -166,6 +166,9 @@ export function AccountAccess({
         method: "POST",
         body: JSON.stringify({ email: email.trim(), password }),
       });
+      if (response.user.role !== "admin") {
+        throw new Error("This account does not have administrator access. Use the User sign-in option.");
+      }
       acceptAuth(response, "login");
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : "Could not sign in";
@@ -294,22 +297,22 @@ export function AccountAccess({
     <div className="access-shell mx-auto grid w-full max-w-6xl gap-5 lg:grid-cols-[0.92fr_1fr]">
       <aside
         className={cn(
-          "access-aside relative isolate flex min-h-[560px] flex-col overflow-hidden rounded-[2rem] p-8 text-white shadow-2xl shadow-violet-950/30 sm:p-10",
+          "access-aside relative isolate flex min-h-[560px] flex-col overflow-hidden rounded-[2rem] p-8 text-white shadow-2xl shadow-[#17241b]/25 sm:p-10",
           "bg-linear-to-br",
           publicTone.sidebar,
         )}
       >
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           <div className="absolute inset-0 opacity-[0.13] [background-image:linear-gradient(to_right,rgba(255,255,255,0.6)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.6)_1px,transparent_1px)] [background-size:52px_52px] [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" />
-          <div className="absolute -top-28 -left-24 size-80 rounded-full bg-violet-500/40 blur-[110px]" />
-          <div className="absolute top-1/3 -right-28 size-96 rounded-full bg-fuchsia-500/25 blur-[120px]" />
+          <div className="absolute -top-28 -left-24 size-80 rounded-full bg-[#4c6d45]/30 blur-[110px]" />
+          <div className="absolute top-1/3 -right-28 size-96 rounded-full bg-[#d9ef94]/15 blur-[120px]" />
           <div className="absolute -bottom-32 left-1/4 size-80 rounded-full bg-sky-400/20 blur-[110px]" />
         </div>
 
         <div className="relative flex items-center gap-3">
           <span
             className={cn(
-              "grid size-10 place-items-center rounded-2xl shadow-lg shadow-fuchsia-500/30",
+              "grid size-10 place-items-center rounded-2xl shadow-lg shadow-[#315c3c]/20",
               "bg-linear-to-br",
               publicTone.gradient,
             )}
@@ -320,22 +323,22 @@ export function AccountAccess({
             </svg>
           </span>
           <span className="text-xl font-black tracking-[-0.05em]">
-            fieldkit<span className="text-violet-300">.</span>
+            fieldkit<span className="text-[#d9ef94]">.</span>
           </span>
-          <Badge className="ml-auto rounded-full border border-white/15 bg-white/10 text-[10px] font-bold tracking-[0.12em] text-violet-100 uppercase">
+          <Badge className="ml-auto rounded-full border border-white/15 bg-white/10 text-[10px] font-bold tracking-[0.12em] text-[#edf3e2] uppercase">
             Member access
           </Badge>
         </div>
 
         <div className="relative mt-14 sm:mt-20">
-          <p className="flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-violet-200 uppercase">
+          <p className="flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-[#dce7cd] uppercase">
             <Sparkles className="size-3.5" />
             Fieldkit membership
           </p>
           <h2 className="mt-4 max-w-md text-4xl leading-[1.05] font-bold tracking-[-0.05em] sm:text-[2.7rem]">
             Good gear.
             <br />
-            <span className="bg-linear-to-r from-violet-200 via-fuchsia-200 to-rose-200 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-[#d9ef94] via-[#c8dea8] to-[#e8efdc] bg-clip-text text-transparent">
               Better projects.
             </span>
           </h2>
@@ -350,10 +353,10 @@ export function AccountAccess({
               key={step.index}
               className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3.5 backdrop-blur-sm"
             >
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-linear-to-br from-violet-500/90 to-fuchsia-500/90 text-xs font-bold text-white shadow-md shadow-violet-950/30">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-linear-to-br from-[#315c3c]/90 to-[#6f8f4c]/90 text-xs font-bold text-white shadow-md shadow-[#17241b]/25">
                 {step.index}
               </span>
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/10 text-violet-100">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/10 text-[#edf3e2]">
                 <step.icon className="size-4" />
               </span>
               <div className="min-w-0">
@@ -368,7 +371,7 @@ export function AccountAccess({
           <AvatarGroup>
             {["AK", "JM", "RS"].map((initials) => (
               <Avatar key={initials} className="size-8 ring-2 ring-white/15">
-                <AvatarFallback className="bg-linear-to-br from-violet-400 to-fuchsia-500 text-[10px] font-bold text-white">
+                <AvatarFallback className="bg-linear-to-br from-[#5d8350] to-[#8fb361] text-[10px] font-bold text-white">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -424,8 +427,14 @@ export function AccountAccess({
             </TabsList>
           </Tabs>
 
+          {accountType === "user" ? (
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600">
+              Customers and equipment owners both sign in here. New email and Google accounts start as customers; an admin can promote a customer to owner.
+            </p>
+          ) : null}
+
           {accountType === "admin" && (
-            <p className="rounded-xl border border-violet-100 bg-violet-50/70 p-3 text-xs leading-6 text-slate-600">
+            <p className="rounded-xl border border-[#dfe6d8] bg-[#f3f7ee]/80 p-3 text-xs leading-6 text-slate-600">
               {isSignup
                 ? "Admin access is provisioned from the backend configuration. If first-admin setup is available, you can create it here."
                 : "Sign in with your administrator credentials."}
@@ -510,7 +519,7 @@ export function AccountAccess({
                 Use at least 6 characters with uppercase and lowercase letters.
               </p>
               {error && (
-                <Alert variant="destructive" className="rounded-xl border-rose-200 bg-rose-50/80">
+                <Alert variant="destructive" className="rounded-xl border-[#f0d6d3] bg-[#fff7f6]/80">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -526,11 +535,11 @@ export function AccountAccess({
               {isCheckingSetup ? (
                 <div className="space-y-3" role="status">
                   <p className={cn("flex items-center gap-2", appSurfaces.body)}>
-                    <span className="size-1.5 animate-pulse rounded-full bg-violet-500" />
+                    <span className="size-1.5 animate-pulse rounded-full bg-[#edf3e2]0" />
                     Checking admin setup status...
                   </p>
-                  <Skeleton className="h-11 w-full rounded-xl bg-violet-100" />
-                  <Skeleton className="h-11 w-full rounded-xl bg-violet-100" />
+                  <Skeleton className="h-11 w-full rounded-xl bg-[#e8efdc]" />
+                  <Skeleton className="h-11 w-full rounded-xl bg-[#e8efdc]" />
                 </div>
               ) : adminSetupAvailable ? (
                 <form className="grid gap-4" onSubmit={handleAdminSetup}>
@@ -576,7 +585,7 @@ export function AccountAccess({
                     />
                   </div>
                   {error && (
-                    <Alert variant="destructive" className="rounded-xl border-rose-200 bg-rose-50/80">
+                    <Alert variant="destructive" className="rounded-xl border-[#f0d6d3] bg-[#fff7f6]/80">
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
@@ -587,13 +596,13 @@ export function AccountAccess({
               ) : (
                 <div className="space-y-3">
                   {adminSetupStatus?.configured && !adminSetupStatus.available ? (
-                    <Alert className="rounded-xl border-violet-100 bg-violet-50/70">
+                    <Alert className="rounded-xl border-[#dfe6d8] bg-[#f3f7ee]/80">
                       <AlertDescription>
                         An administrator account already exists. Please sign in as admin instead.
                       </AlertDescription>
                     </Alert>
                   ) : (
-                    <Alert className="rounded-xl border-violet-100 bg-violet-50/70">
+                    <Alert className="rounded-xl border-[#dfe6d8] bg-[#f3f7ee]/80">
                       <AlertDescription>
                         Admin accounts are managed by the backend configuration. If you need first-time admin setup, configure{" "}
                         <code className="rounded bg-white px-1 py-0.5 font-mono text-[11px] text-slate-700">ADMIN_EMAIL</code>{" "}
@@ -604,7 +613,7 @@ export function AccountAccess({
                     </Alert>
                   )}
                   {setupStatusError && (
-                    <Alert variant="destructive" className="rounded-xl border-rose-200 bg-rose-50/80">
+                    <Alert variant="destructive" className="rounded-xl border-[#f0d6d3] bg-[#fff7f6]/80">
                       <AlertDescription>{setupStatusError}</AlertDescription>
                     </Alert>
                   )}
@@ -613,7 +622,7 @@ export function AccountAccess({
                     className={buttonVariants({
                       variant: "outline",
                       className:
-                        "h-11 w-full rounded-full border-slate-200 bg-white text-slate-700 hover:bg-violet-50 hover:text-violet-700",
+                        "h-11 w-full rounded-full border-slate-200 bg-white text-slate-700 hover:bg-[#edf3e2] hover:text-[#315c3c]",
                     })}
                   >
                     Go to admin sign in
@@ -657,7 +666,7 @@ export function AccountAccess({
                 />
               </div>
               {error && (
-                <Alert variant="destructive" className="rounded-xl border-rose-200 bg-rose-50/80">
+                <Alert variant="destructive" className="rounded-xl border-[#f0d6d3] bg-[#fff7f6]/80">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}

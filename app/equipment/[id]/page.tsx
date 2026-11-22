@@ -51,7 +51,7 @@ function DetailsSkeleton() {
   return (
     <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/4 size-[28rem] rounded-full bg-violet-200/50 blur-[120px]" />
+        <div className="absolute -top-40 left-1/4 size-[28rem] rounded-full bg-[#d9ef94]/20 blur-[120px]" />
       </div>
       <div className="relative">
         <Skeleton className="h-4 w-64 rounded-full" />
@@ -116,13 +116,13 @@ async function EquipmentDetailsContent({
   return (
     <div className="relative mx-auto max-w-7xl px-4 pt-8 pb-24 sm:px-6 lg:px-8 lg:pb-8">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/4 size-[28rem] rounded-full bg-violet-200/50 blur-[120px]" />
-        <div className="absolute -right-32 top-32 size-[24rem] rounded-full bg-fuchsia-200/40 blur-[110px]" />
+        <div className="absolute -top-40 left-1/4 size-[28rem] rounded-full bg-[#d9ef94]/20 blur-[120px]" />
+        <div className="absolute -right-32 top-32 size-[24rem] rounded-full bg-[#d9ef94]/15 blur-[110px]" />
       </div>
 
       <div className="relative">
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
-          <Link href="/equipment" className="font-semibold text-violet-700 hover:text-fuchsia-700">
+          <Link href="/equipment" className="font-semibold text-[#315c3c] hover:text-[#315c3c]">
             All equipment
           </Link>
           <span aria-hidden="true">/</span>
@@ -165,7 +165,7 @@ async function EquipmentDetailsContent({
               <CardContent className="p-6 sm:p-8">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className={cn(appSurfaces.eyebrow, "text-violet-600")}>
+                    <p className={cn(appSurfaces.eyebrow, "text-[#4c6d45]")}>
                       {item.category} / Approved listing
                     </p>
                     <h1 className="mt-2 text-3xl leading-tight font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -179,7 +179,7 @@ async function EquipmentDetailsContent({
                 </div>
 
                 <p className="mt-4 flex items-center gap-1.5 text-sm font-medium text-slate-500">
-                  <MapPin className="size-4 text-violet-500" aria-hidden="true" />
+                  <MapPin className="size-4 text-[#4c6d45]" aria-hidden="true" />
                   {item.location}
                 </p>
                 <p className={cn("mt-5 max-w-2xl", appSurfaces.body)}>
@@ -234,9 +234,9 @@ async function EquipmentDetailsContent({
                 ) : null}
 
                 <section className="mt-8" aria-labelledby="owner-heading">
-                  <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-violet-100 bg-linear-to-r from-violet-50/80 to-fuchsia-50/60 p-5">
+                  <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-[#dfe6d8] bg-linear-to-r from-[#f3f7ee] to-[#edf3e2] p-5">
                     <Avatar className="size-12 rounded-2xl ring-2 ring-white">
-                      <AvatarFallback className="rounded-2xl bg-linear-to-br from-violet-600 to-fuchsia-600 text-sm font-bold text-white">
+                      <AvatarFallback className="rounded-2xl bg-linear-to-br from-[#315c3c] to-[#6f8f4c] text-sm font-bold text-white">
                         {ownerInitials}
                       </AvatarFallback>
                     </Avatar>
@@ -275,7 +275,7 @@ async function EquipmentDetailsContent({
 
                 <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
                   <Avatar className="size-9 rounded-xl">
-                    <AvatarFallback className="rounded-xl bg-violet-100 text-xs font-bold text-violet-700">
+                    <AvatarFallback className="rounded-xl bg-[#e8efdc] text-xs font-bold text-[#315c3c]">
                       {ownerInitials}
                     </AvatarFallback>
                   </Avatar>

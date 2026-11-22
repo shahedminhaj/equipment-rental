@@ -64,7 +64,7 @@ function formatPaymentAmount(amount: number, currency: string) {
 
 function FieldError({ children }: { children: ReactNode }) {
   return (
-    <p className="flex items-center gap-1.5 text-xs leading-relaxed text-rose-600" role="alert">
+    <p className="flex items-center gap-1.5 text-xs leading-relaxed text-[#9a3f37]" role="alert">
       <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
       {children}
     </p>
@@ -72,7 +72,7 @@ function FieldError({ children }: { children: ReactNode }) {
 }
 
 const fieldClass =
-  "h-10 rounded-xl border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-violet-400 focus-visible:ring-2 focus-visible:ring-violet-100";
+  "h-10 rounded-xl border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-[#7ba356] focus-visible:ring-2 focus-visible:ring-[#dce7cd]";
 
 export function EquipmentBooking({
   item,
@@ -244,6 +244,13 @@ export function EquipmentBooking({
   async function handleCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting) return;
+    if (!token && authMode === "register" &&
+        (password.length < 6 || !/[A-Z]/.test(password) || !/[a-z]/.test(password))) {
+      const message = "Password must be at least 6 characters and include an uppercase and a lowercase letter.";
+      setError(message);
+      notify(message, "error");
+      return;
+    }
     if (!canBook) {
       const reason = quoteError || (
         wrongRole
@@ -330,8 +337,8 @@ export function EquipmentBooking({
   const triggerButton = (
     <Button
       className={cn(
-        "h-11 w-full justify-between rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20",
-        "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+        "h-11 w-full justify-between rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-[#315c3c]/15",
+        "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-[#3a6a45] hover:via-[#5b8249] hover:to-[#8fb361]",
         publicTone.gradient,
       )}
       type="button"
@@ -389,7 +396,7 @@ export function EquipmentBooking({
                   <CalendarDays className="size-5" />
                 </span>
                 <div>
-                  <p className="text-[10px] font-bold tracking-[0.16em] text-violet-700 uppercase">
+                  <p className="text-[10px] font-bold tracking-[0.16em] text-[#315c3c] uppercase">
                     Book this equipment
                   </p>
                   <h2 id="booking-title" className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
@@ -543,7 +550,7 @@ export function EquipmentBooking({
                           {authMode === "login" ? "Sign in to continue" : "Create a customer account"}
                         </strong>
                         <Button
-                          className="h-auto p-0 text-xs font-semibold text-violet-700 hover:text-fuchsia-700"
+                          className="h-auto p-0 text-xs font-semibold text-[#315c3c] hover:text-[#315c3c]"
                           variant="link"
                           size="sm"
                           type="button"
@@ -598,6 +605,8 @@ export function EquipmentBooking({
                             type="password"
                             autoComplete={authMode === "login" ? "current-password" : "new-password"}
                             minLength={6}
+                            pattern={authMode === "register" ? "(?=.*[a-z])(?=.*[A-Z]).{6,}" : undefined}
+                            title="Use at least 6 characters with an uppercase and a lowercase letter"
                             required
                             value={password}
                             onChange={(event) => updateField(() => setPassword(event.target.value))}
@@ -622,7 +631,7 @@ export function EquipmentBooking({
                 {error && (
                   <Alert
                     variant="destructive"
-                    className="mb-3 rounded-xl border-rose-100 bg-rose-50/70 px-3 py-2 text-rose-900"
+                    className="mb-3 rounded-xl border-[#f0d6d3] bg-[#fff7f6]/70 px-3 py-2 text-rose-900"
                   >
                     <TriangleAlert className="size-4" aria-hidden="true" />
                     <AlertDescription className="text-xs leading-relaxed text-rose-900">
@@ -643,7 +652,7 @@ export function EquipmentBooking({
                     {formatPaymentAmount(displayedTotal, displayedCurrency)}
                   </strong>
                 </div>
-                {quoteError ? <p className="mb-2 text-xs text-rose-600" role="alert">{quoteError}</p> : null}
+                {quoteError ? <p className="mb-2 text-xs text-[#9a3f37]" role="alert">{quoteError}</p> : null}
                 <div className="grid grid-cols-2 gap-2">
                   {token ? (
                     <Button
@@ -667,8 +676,8 @@ export function EquipmentBooking({
                   </Button>
                   <Button
                     className={cn(
-                      "col-span-2 h-11 w-full rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/20",
-                      "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+                      "col-span-2 h-11 w-full rounded-full px-5 text-sm font-semibold text-white shadow-lg shadow-[#315c3c]/15",
+                      "bg-linear-to-r transition-all hover:-translate-y-0.5 hover:from-[#3a6a45] hover:via-[#5b8249] hover:to-[#8fb361]",
                       publicTone.gradient,
                     )}
                     type="submit"

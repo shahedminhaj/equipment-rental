@@ -57,10 +57,15 @@ type OwnerAnalytics = {
 };
 
 const tone = roleTones.owner;
-// The shared UI kit reads tone from context; these two props still render inline CSS.
-const statGradient = "linear-gradient(135deg, #f59e0b, #f97316, #f43f5e)";
-const statSoft = "#fef3c7";
-const heroGlow = "linear-gradient(135deg, #f59e0b, #ea580c, #db2777)";
+const statGradient = "linear-gradient(135deg, #4b6337, #6f8f4c, #9aa95e)";
+const statSoft = "#f1f4e3";
+const statPalettes = [
+  { gradient: "linear-gradient(135deg, #4b6337, #8ca65a)", soft: "#f1f4e3" },
+  { gradient: "linear-gradient(135deg, #256a7a, #58a6a2)", soft: "#eaf6f5" },
+  { gradient: "linear-gradient(135deg, #a66035, #de9a5d)", soft: "#fff3e8" },
+  { gradient: "linear-gradient(135deg, #70479b, #a66dc3)", soft: "#f4eef9" },
+];
+const heroGlow = "linear-gradient(135deg, #1b3224, #3b532f, #61733f)";
 
 const monthFormatter = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" });
 function monthLabel(month: string) {
@@ -319,7 +324,7 @@ export function OwnerDashboard() {
           <Button
             type="button"
             onClick={() => setShowCreateForm((current) => !current)}
-            className={`h-9 rounded-xl bg-white px-4 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 hover:bg-white ${tone.accentText}`}
+            className={`dashboard-hero-cta h-9 rounded-xl bg-white px-4 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 hover:bg-white ${tone.accentText}`}
           >
             {showCreateForm ? <X size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
             {showCreateForm ? "Close form" : "List new equipment"}
@@ -392,7 +397,7 @@ export function OwnerDashboard() {
             </Label>
             <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Condition
-              <Input className="h-9" name="condition" maxLength={200} placeholder="e.g. Excellent" />
+              <Input className="h-9" name="condition" maxLength={200} placeholder="e.g. Excellent" required />
             </Label>
             <Label className="flex flex-col items-start gap-1.5 text-xs font-semibold text-slate-600">
               Brand
@@ -442,8 +447,8 @@ export function OwnerDashboard() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
+            {stats.map((stat, index) => (
+              <StatCard key={stat.label} {...stat} {...statPalettes[index % statPalettes.length]} />
             ))}
           </div>
 
@@ -592,7 +597,7 @@ export function OwnerDashboard() {
                           size="sm"
                           variant="ghost"
                           disabled={busyId === item.id}
-                          className="text-rose-600 hover:bg-rose-50"
+                          className="text-[#9a3f37] hover:bg-[#fff7f6]"
                           onClick={() => {
                             if (!window.confirm(`Delete "${item.name}"?`)) return;
                             void updateRequest(
@@ -683,7 +688,7 @@ export function OwnerDashboard() {
                           size="sm"
                           variant="outline"
                           disabled={busyId === booking.id}
-                          className="border-rose-200 text-rose-600 hover:bg-rose-50"
+                          className="border-[#f0d6d3] text-[#9a3f37] hover:bg-[#fff7f6]"
                           onClick={() =>
                             updateRequest(
                               `/bookings/${booking.id}/status`,

@@ -42,6 +42,7 @@ let bookings;
 let payments;
 let favorites;
 let reviews;
+let notifications;
 
 const cleanUser = (user) => ({
   id: String(user._id), name: user.name, email: user.email, role: user.role,
@@ -71,6 +72,38 @@ const publicBooking = (booking) => booking && ({
   customer: booking.customer ? { name: booking.customer.name, email: booking.customer.email } : null,
   owner: booking.owner ? { name: booking.owner.name, email: booking.owner.email } : null,
 });
+const publicNotification = (item, currentUserId) => {
+  const direction = String(item.senderId) === String(currentUserId) ? "sent" : "received";
+  return {
+    id: idOf(item._id), messageId: idOf(item.messageId), type: item.type || "message", direction,
+    senderName: item.senderName, senderRole: item.senderRole,
+    recipientName: direction === "sent" && item.senderRole !== "admin" && item.recipientRole === "admin" ? "Admin team" : item.recipientName,
+    recipientRole: item.recipientRole,
+    subject: item.subject, message: item.message, createdAt: item.createdAt,
+    readAt: direction === "sent" ? item.createdAt : item.readAt || null,
+  };
+};
+async function createInboxNotifications({ sender, recipients, subject, message, type = "message" }) {
+  const uniqueRecipients = [...new Map(recipients.filter(Boolean).map((recipient) => [String(recipient._id), recipient])).values()];
+  if (!uniqueRecipients.length) return [];
+  const createdAt = new Date();
+  const messageId = new ObjectId();
+  const rows = uniqueRecipients.map((recipient) => ({
+    messageId, senderId: sender._id, senderName: sender.name, senderRole: sender.role,
+    recipientId: recipient._id, recipientName: recipient.name, recipientRole: recipient.role,
+    subject, message, type, createdAt, readAt: null,
+  }));
+  const result = await notifications.insertMany(rows);
+  return rows.map((row, index) => ({ ...row, _id: result.insertedIds[index] }));
+}
+async function notifyInboxSafely(payload) {
+  try {
+    const recipients = payload.recipients || await users.find({ role: "admin", disabled: { $ne: true } }).toArray();
+    await createInboxNotifications({ ...payload, recipients });
+  } catch (error) {
+    console.error("Could not create inbox activity", error);
+  }
+}
 const fail = (status, message) => Object.assign(new Error(message), { status });
 const asyncRoute = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 
@@ -201,7 +234,7 @@ app.post("/api/payments/webhook", express.raw({ type: "application/json" }), asy
     if (bookingId) {
       const current = await bookings.findOne({ _id: bookingId });
       if (current && ["cancelled", "rejected"].includes(current.bookingStatus) && session.payment_intent) {
-        const refund = await stripe.refunds.create({ payment_intent: session.payment_intent });
+        const refund = await stripe.refunds.create({ payment_intent: session.payment_intent }, { idempotencyKey: `cancel-booking-${bookingId}` });
         await bookings.updateOne({ _id: bookingId }, { $set: { paymentStatus: "refunded", stripePaymentIntentId: String(session.payment_intent), refundId: refund.id, updatedAt: new Date() } });
         await payments.updateOne({ bookingId }, { $set: { status: "refunded", transactionId: String(session.payment_intent), refundId: refund.id, updatedAt: new Date() } });
       } else {
@@ -234,13 +267,12 @@ app.get("/api/auth/admin/setup-status", asyncRoute(async (_req, res) => {
 app.post("/api/auth/admin/setup", asyncRoute(async (req, res) => {
   const email = String(req.body.email || "").trim().toLowerCase();
   const password = String(req.body.password || "");
+  const configuredEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const configuredPassword = process.env.ADMIN_PASSWORD;
+  if (!configuredEmail || !configuredPassword) throw fail(503, "Admin setup is disabled until ADMIN_EMAIL and ADMIN_PASSWORD are configured on the server.");
+  if (email !== configuredEmail || password !== configuredPassword) throw fail(403, "Use the administrator credentials configured on the server.");
   if (password.length < 6 || !/[A-Z]/.test(password) || !/[a-z]/.test(password)) throw fail(400, "Password must have at least 6 characters, one uppercase letter, and one lowercase letter.");
-  const adminExists = await users.countDocuments({ role: "admin" });
-  const configuredMatch = process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD && email === process.env.ADMIN_EMAIL.trim().toLowerCase() && password === process.env.ADMIN_PASSWORD;
-  if (adminExists && !configuredMatch) throw fail(403, "Admin account is already configured.");
-  if (process.env.ADMIN_EMAIL && email !== process.env.ADMIN_EMAIL.trim().toLowerCase()) throw fail(403, "Use the configured administrator email.");
   const user = await users.findOne({ email });
-  if (user && user.role !== "admin" && !configuredMatch) throw fail(409, "This email is already registered.");
   const passwordHash = await bcrypt.hash(password, 12);
   const result = await users.findOneAndUpdate({ email }, { $set: { name: user?.name || "Administrator", email, passwordHash, role: "admin", disabled: false, updatedAt: new Date() }, $setOnInsert: { createdAt: new Date(), photo: "", phone: "", address: "" } }, { upsert: true, returnDocument: "after" });
   sendAuth(res, result);
@@ -276,6 +308,49 @@ app.post("/api/auth/google", asyncRoute(async (req, res) => {
   sendAuth(res, user);
 }));
 app.get("/api/auth/me", ...verifyAnyUser, (req, res) => res.json({ user: cleanUser(req.user) }));
+
+app.get("/api/notifications/mine", ...verifyAnyUser, asyncRoute(async (req, res) => {
+  const requestedLimit = Number.parseInt(req.query.limit, 10);
+  const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, requestedLimit)) : 30;
+  const rows = await notifications.find({ $or: [{ recipientId: req.user._id }, { senderId: req.user._id }] })
+    .sort({ createdAt: -1, _id: -1 }).limit(limit).toArray();
+  const seenOutgoing = new Set();
+  const items = rows.filter((item) => {
+    if (String(item.senderId) !== String(req.user._id)) return true;
+    const messageId = idOf(item.messageId);
+    if (seenOutgoing.has(messageId)) return false;
+    seenOutgoing.add(messageId);
+    return true;
+  }).map((item) => publicNotification(item, req.user._id));
+  const unreadCount = await notifications.countDocuments({ recipientId: req.user._id, readAt: null });
+  res.json({ items, unreadCount });
+}));
+app.post("/api/notifications", ...verifyAnyUser, asyncRoute(async (req, res) => {
+  const subject = String(req.body.subject || "").trim();
+  const message = String(req.body.message || "").trim();
+  if (subject.length < 3 || subject.length > 100 || message.length < 2 || message.length > 1500) {
+    throw fail(400, "Enter a subject and a message within the allowed length.");
+  }
+  let recipients;
+  if (req.user.role === "admin") {
+    const recipientId = toObjectId(req.body.recipientId);
+    const recipient = recipientId && await users.findOne({ _id: recipientId, role: { $in: ["customer", "owner"] }, disabled: { $ne: true } });
+    if (!recipient) throw fail(404, "Choose an active renter or equipment owner.");
+    recipients = [recipient];
+  } else {
+    recipients = await users.find({ role: "admin", disabled: { $ne: true } }).toArray();
+    if (!recipients.length) throw fail(503, "There is no administrator available to receive this message.");
+  }
+  const rows = await createInboxNotifications({ sender: req.user, recipients, subject, message, type: "message" });
+  res.status(201).json({ notification: publicNotification(rows[0], req.user._id) });
+}));
+app.patch("/api/notifications/read-all", ...verifyAnyUser, asyncRoute(async (req, res) => {
+  const result = await notifications.updateMany(
+    { recipientId: req.user._id, readAt: null },
+    { $set: { readAt: new Date() } },
+  );
+  res.json({ success: true, modifiedCount: result.modifiedCount });
+}));
 
 app.get("/api/profile", ...verifyAnyUser, (req, res) => res.json({ user: cleanUser(req.user) }));
 app.patch("/api/profile", ...verifyAnyUser, asyncRoute(async (req, res) => {
@@ -329,6 +404,7 @@ app.post("/api/equipment", ...verifyOwner, asyncRoute(async (req, res) => {
   if (name.length < 3 || !String(body.description || "").trim() || !category || !String(body.location || "").trim() || !String(body.image || "").trim() || !String(body.condition || "").trim() || !String(body.brand || "").trim() || !String(body.model || "").trim() || !terms.length || !Number.isFinite(price) || price <= 0 || !Number.isInteger(availableQuantity) || availableQuantity < 1 || !["Daily", "Weekly", "Monthly"].includes(body.rentalType)) throw fail(400, "Complete all required equipment fields with valid values.");
   const record = { name, description: String(body.description || "").trim(), category, location: String(body.location).trim(), price, rentalType: body.rentalType, availableQuantity, image: String(body.image).trim(), condition: String(body.condition).trim(), brand: String(body.brand).trim(), model: String(body.model).trim(), rentalTerms: terms, status: "pending", ownerId: req.user._id, owner: { name: req.user.name, photo: req.user.photo, email: req.user.email }, createdAt: new Date(), updatedAt: new Date() };
   const result = await equipment.insertOne(record);
+  await notifyInboxSafely({ sender: req.user, subject: "Equipment listing submitted", message: `${name} was submitted and is waiting for admin review.`, type: "equipment_request" });
   res.status(201).json({ item: publicEquipment({ ...record, _id: result.insertedId }) });
 }));
 app.patch("/api/equipment/:id", ...verifyAnyUser, asyncRoute(async (req, res) => {
@@ -368,8 +444,18 @@ app.patch("/api/admin/equipment/:id/status", ...verifyAdmin, asyncRoute(async (r
   const id = toObjectId(req.params.id);
   const status = req.body.status;
   if (!id || !["pending", "approved", "rejected"].includes(status)) throw fail(400, "Invalid equipment status.");
+  const listing = await equipment.findOne({ _id: id });
+  if (!listing) throw fail(404, "Equipment not found.");
   const result = await equipment.updateOne({ _id: id }, { $set: { status, updatedAt: new Date() } });
   if (!result.matchedCount) throw fail(404, "Equipment not found.");
+  if (["approved", "rejected"].includes(status)) {
+    const owner = await users.findOne({ _id: listing.ownerId });
+    if (owner) await notifyInboxSafely({
+      sender: req.user, recipients: [owner], type: "equipment_status",
+      subject: `Equipment listing ${status}`,
+      message: `Your listing “${listing.name}” was ${status} by the admin team.`,
+    });
+  }
   res.json({ success: true, status });
 }));
 app.get("/api/admin/users", ...verifyAdmin, asyncRoute(async (req, res) => {
@@ -383,6 +469,8 @@ app.patch("/api/admin/users/:id/role", ...verifyAdmin, asyncRoute(async (req, re
   if (String(id) === String(req.user._id) && req.body.role !== "admin") throw fail(400, "You cannot remove your own administrator role.");
   const result = await users.updateOne({ _id: id }, { $set: { role: req.body.role, updatedAt: new Date() } });
   if (!result.matchedCount) throw fail(404, "User not found.");
+  const recipient = await users.findOne({ _id: id });
+  if (recipient) await notifyInboxSafely({ sender: req.user, recipients: [recipient], type: "account_role", subject: "Your account role changed", message: `An administrator changed your Fieldkit role to ${req.body.role}.` });
   res.json({ success: true });
 }));
 app.patch("/api/admin/users/:id/status", ...verifyAdmin, asyncRoute(async (req, res) => {
@@ -391,6 +479,8 @@ app.patch("/api/admin/users/:id/status", ...verifyAdmin, asyncRoute(async (req, 
   if (String(id) === String(req.user._id) && req.body.disabled) throw fail(400, "You cannot disable your own account.");
   const result = await users.updateOne({ _id: id }, { $set: { disabled: req.body.disabled, updatedAt: new Date() } });
   if (!result.matchedCount) throw fail(404, "User not found.");
+  const recipient = await users.findOne({ _id: id });
+  if (recipient) await notifyInboxSafely({ sender: req.user, recipients: [recipient], type: "account_status", subject: `Account ${req.body.disabled ? "disabled" : "enabled"}`, message: `An administrator ${req.body.disabled ? "disabled" : "re-enabled"} your Fieldkit account.` });
   res.json({ success: true });
 }));
 
@@ -443,6 +533,11 @@ app.post("/api/bookings", ...verifyRenter, asyncRoute(async (req, res) => {
     const checkout = await stripe.checkout.sessions.create({ mode: "payment", payment_method_types: ["card"], line_items: [{ quantity: 1, price_data: { currency, unit_amount: Math.round(totalAmount * 100), product_data: { name: item.name, description: `${units} ${item.rentalType.toLowerCase()} unit(s), quantity ${quantity}` } } }], metadata: { bookingId: String(inserted.insertedId) }, success_url: `${frontendUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${frontendUrl}/payment/cancel?bookingId=${inserted.insertedId}` });
     await bookings.updateOne({ _id: inserted.insertedId }, { $set: { stripeSessionId: checkout.id, updatedAt: new Date() } });
     await payments.insertOne({ bookingId: inserted.insertedId, customerId: req.user._id, amount: totalAmount, currency, status: "pending", stripeSessionId: checkout.id, createdAt: new Date() });
+    const owner = await users.findOne({ _id: item.ownerId });
+    if (owner) await notifyInboxSafely({
+      sender: req.user, recipients: [owner], type: "booking_request", subject: "New rental request",
+      message: `${req.user.name} requested ${item.name} for ${start} to ${end}. The booking is waiting for your confirmation.`,
+    });
     res.status(201).json({ bookingId: String(inserted.insertedId), checkoutUrl: checkout.url });
   } catch (error) {
     await bookings.deleteOne({ _id: inserted.insertedId });
@@ -473,7 +568,7 @@ app.get("/api/bookings/checkout/:sessionId", ...verifyRenter, asyncRoute(async (
     const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
     if (session.payment_status === "paid") {
       if (["cancelled", "rejected"].includes(booking.bookingStatus) && session.payment_intent) {
-        const refund = await stripe.refunds.create({ payment_intent: session.payment_intent });
+        const refund = await stripe.refunds.create({ payment_intent: session.payment_intent }, { idempotencyKey: `cancel-booking-${booking._id}` });
         await bookings.updateOne({ _id: booking._id }, { $set: { paymentStatus: "refunded", stripePaymentIntentId: String(session.payment_intent), refundId: refund.id, updatedAt: new Date() } });
         await payments.updateOne({ bookingId: booking._id }, { $set: { status: "refunded", transactionId: String(session.payment_intent), refundId: refund.id, updatedAt: new Date() } });
       } else {
@@ -484,18 +579,68 @@ app.get("/api/bookings/checkout/:sessionId", ...verifyRenter, asyncRoute(async (
   }
   res.json({ booking: publicBooking(await loadBooking(booking._id)) });
 }));
-app.post("/api/bookings/:bookingId/cancel-checkout", ...verifyRenter, asyncRoute(async (req, res) => {
+const cancelBookingForRenter = asyncRoute(async (req, res) => {
   const id = toObjectId(req.params.bookingId);
   if (!id) throw fail(404, "Booking not found.");
   const booking = await bookings.findOne({ _id: id, customerId: req.user._id });
   if (!booking) throw fail(404, "Booking not found.");
-  if (booking.paymentStatus === "pending") {
-    if (stripe && booking.stripeSessionId) try { await stripe.checkout.sessions.expire(booking.stripeSessionId); } catch {}
-    await bookings.updateOne({ _id: id }, { $set: { paymentStatus: "failed", bookingStatus: "cancelled", updatedAt: new Date() } });
-    await payments.updateOne({ bookingId: id }, { $set: { status: "failed", updatedAt: new Date() } });
+  if (booking.bookingStatus === "cancelled") return res.json({ booking: publicBooking(await loadBooking(id)) });
+  if (booking.bookingStatus !== "pending") throw fail(409, "Only bookings awaiting confirmation can be cancelled.");
+
+  const cancellationRequestedAt = new Date();
+  const claim = await bookings.updateOne(
+    { _id: id, customerId: req.user._id, bookingStatus: "pending", cancellationRequestedAt: { $exists: false } },
+    { $set: { cancellationRequestedAt } },
+  );
+  if (!claim.modifiedCount) throw fail(409, "This booking is already being updated. Refresh and try again.");
+
+  try {
+    let paymentStatus = booking.paymentStatus;
+    let paymentIntentId = booking.stripePaymentIntentId;
+    let checkoutSession = null;
+    if (stripe && booking.stripeSessionId && paymentStatus === "pending") {
+      checkoutSession = await stripe.checkout.sessions.retrieve(booking.stripeSessionId);
+      if (checkoutSession.payment_status === "paid") {
+        paymentStatus = "paid";
+        paymentIntentId = String(checkoutSession.payment_intent || "");
+      }
+    }
+
+    let refundId;
+    if (paymentStatus === "paid") {
+      if (!stripe || !paymentIntentId) throw fail(503, "A refund cannot be created for this booking right now.");
+      const refund = await stripe.refunds.create(
+        { payment_intent: paymentIntentId },
+        { idempotencyKey: `cancel-booking-${id}` },
+      );
+      refundId = refund.id;
+      paymentStatus = "refunded";
+    } else if (paymentStatus === "pending") {
+      if (stripe && booking.stripeSessionId && checkoutSession?.status === "open") {
+        try { await stripe.checkout.sessions.expire(booking.stripeSessionId); } catch {}
+      }
+      paymentStatus = "failed";
+    }
+
+    await payments.updateOne(
+      { bookingId: id },
+      { $set: { status: paymentStatus, ...(paymentIntentId ? { transactionId: paymentIntentId } : {}), ...(refundId ? { refundId } : {}), updatedAt: new Date() } },
+    );
+    await bookings.updateOne(
+      { _id: id, customerId: req.user._id, bookingStatus: "pending", cancellationRequestedAt },
+      { $set: { bookingStatus: "cancelled", paymentStatus, ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}), ...(refundId ? { refundId } : {}), updatedAt: new Date() }, $unset: { cancellationRequestedAt: "" } },
+    );
+    res.json({ booking: publicBooking(await loadBooking(id)) });
+  } catch (error) {
+    await bookings.updateOne(
+      { _id: id, bookingStatus: "pending", cancellationRequestedAt },
+      { $unset: { cancellationRequestedAt: "" } },
+    );
+    throw error;
   }
-  res.json({ booking: publicBooking(await loadBooking(id)) });
-}));
+});
+app.post("/api/bookings/:bookingId/cancel-checkout", ...verifyRenter, cancelBookingForRenter);
+app.post("/api/bookings/:bookingId/cancel", ...verifyRenter, cancelBookingForRenter);
 app.patch("/api/bookings/:bookingId/status", ...verifyAnyUser, asyncRoute(async (req, res) => {
   const id = toObjectId(req.params.bookingId);
   if (!id) throw fail(404, "Booking not found.");
@@ -513,7 +658,7 @@ app.patch("/api/bookings/:bookingId/status", ...verifyAnyUser, asyncRoute(async 
   let refundId;
   if (["rejected", "cancelled"].includes(status) && booking.paymentStatus === "paid") {
     if (!stripe || !booking.stripePaymentIntentId) throw fail(503, "A Stripe refund cannot be created for this booking right now.");
-    const refund = await stripe.refunds.create({ payment_intent: booking.stripePaymentIntentId });
+    const refund = await stripe.refunds.create({ payment_intent: booking.stripePaymentIntentId }, { idempotencyKey: `cancel-booking-${id}` });
     refundId = refund.id;
     paymentStatus = "refunded";
     await payments.updateOne({ bookingId: id }, { $set: { status: "refunded", refundId, updatedAt: new Date() } });
@@ -522,7 +667,25 @@ app.patch("/api/bookings/:bookingId/status", ...verifyAnyUser, asyncRoute(async 
     paymentStatus = "failed";
     await payments.updateOne({ bookingId: id }, { $set: { status: "failed", updatedAt: new Date() } });
   }
-  await bookings.updateOne({ _id: id }, { $set: { bookingStatus: status, paymentStatus, ...(refundId ? { refundId } : {}), updatedAt: new Date() } });
+  const updateResult = await bookings.updateOne(
+    { _id: id, bookingStatus: booking.bookingStatus, cancellationRequestedAt: { $exists: false } },
+    { $set: { bookingStatus: status, paymentStatus, ...(refundId ? { refundId } : {}), updatedAt: new Date() } },
+  );
+  if (!updateResult.modifiedCount) throw fail(409, "This booking changed before your update completed. Refresh and try again.");
+  if (booking.customerId) {
+    const renter = await users.findOne({ _id: booking.customerId });
+    if (renter) {
+      const actor = req.user.role === "admin" ? "The admin team" : "The equipment owner";
+      const activity = status === "confirmed"
+        ? `${actor} confirmed your booking for ${booking.equipmentName}.`
+        : status === "rejected" || status === "cancelled"
+          ? `${actor} ${status === "rejected" ? "declined" : "cancelled"} your booking for ${booking.equipmentName}${paymentStatus === "refunded" ? ". Your refund is being processed." : "."}`
+          : status === "completed"
+            ? `Your rental for ${booking.equipmentName} is complete.`
+            : `Your booking for ${booking.equipmentName} is now ${status}.`;
+      await notifyInboxSafely({ sender: req.user, recipients: [renter], type: "booking_status", subject: `Booking ${status}`, message: activity });
+    }
+  }
   if (status === "completed") {
     try { await notifyCompletion({ ...booking, bookingStatus: status }); } catch (error) { console.error("Completion email failed", error); }
   }
@@ -536,9 +699,9 @@ app.get("/api/payments/mine", ...verifyRenter, asyncRoute(async (req, res) => {
 
 app.get("/api/analytics/admin", ...verifyAdmin, asyncRoute(async (_req, res) => {
   const [totalUsers, totalEquipment, totalBookings, pendingApprovals, completedRentals, revenueRows, bookingRows, monthlyRevenueRows] = await Promise.all([
-    users.countDocuments({}), equipment.countDocuments({}), bookings.countDocuments({}), equipment.countDocuments({ status: "pending" }), bookings.countDocuments({ bookingStatus: "completed" }),
+    users.countDocuments({}), equipment.countDocuments({}), bookings.countDocuments({ bookingStatus: { $nin: ["cancelled", "rejected"] } }), equipment.countDocuments({ status: "pending" }), bookings.countDocuments({ bookingStatus: "completed" }),
     payments.aggregate([{ $match: { status: "paid" } }, { $group: { _id: null, total: { $sum: "$amount" } } }]).toArray(),
-    bookings.aggregate([{ $match: { createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1) } } }, { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } }, bookings: { $sum: 1 } } }, { $sort: { _id: 1 } }]).toArray(),
+    bookings.aggregate([{ $match: { bookingStatus: { $nin: ["cancelled", "rejected"] }, createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1) } } }, { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } }, bookings: { $sum: 1 } } }, { $sort: { _id: 1 } }]).toArray(),
     payments.aggregate([{ $match: { status: "paid", createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1) } } }, { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } }, revenue: { $sum: "$amount" } } }, { $sort: { _id: 1 } }]).toArray(),
   ]);
   const monthKeys = Array.from({ length: 12 }, (_, index) => { const date = new Date(); date.setDate(1); date.setMonth(date.getMonth() - 11 + index); return date.toISOString().slice(0, 7); });
@@ -588,12 +751,13 @@ async function start() {
   await client.connect();
   db = client.db(dbName);
   users = db.collection("users"); equipment = db.collection("equipment"); bookings = db.collection("bookings");
-  payments = db.collection("payments"); favorites = db.collection("favorites"); reviews = db.collection("reviews");
+  payments = db.collection("payments"); favorites = db.collection("favorites"); reviews = db.collection("reviews"); notifications = db.collection("notifications");
   await Promise.all([
     users.createIndex({ email: 1 }, { unique: true }),
     equipment.createIndex({ status: 1, createdAt: -1 }), equipment.createIndex({ ownerId: 1, createdAt: -1 }),
     bookings.createIndex({ customerId: 1, createdAt: -1 }), bookings.createIndex({ ownerId: 1, createdAt: -1 }), bookings.createIndex({ stripeSessionId: 1 }, { sparse: true }),
     payments.createIndex({ bookingId: 1 }, { unique: true }), favorites.createIndex({ userId: 1, equipmentId: 1 }, { unique: true }), reviews.createIndex({ bookingId: 1 }, { unique: true }),
+    notifications.createIndex({ recipientId: 1, createdAt: -1 }), notifications.createIndex({ senderId: 1, createdAt: -1 }), notifications.createIndex({ messageId: 1 }),
   ]);
   await ensureAdmin();
   app.listen(port, () => console.log(`Fieldkit API listening on port ${port}`));

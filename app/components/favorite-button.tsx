@@ -40,7 +40,7 @@ export function FavoriteButton({ equipmentId }: { equipmentId: string }) {
       <Link
         className={buttonVariants({
           variant: "outline",
-          className: "w-full gap-2 rounded-full border-violet-100 bg-violet-50/60 text-violet-700 hover:bg-violet-100 hover:text-violet-800",
+          className: "w-full gap-2 rounded-full border-[#dfe6d8] bg-[#f3f7ee]/80 text-[#315c3c] hover:bg-[#e8efdc] hover:text-[#27492f]",
         })}
         href={`/login?next=${encodeURIComponent(`/equipment/${equipmentId}`)}`}
       >
@@ -85,8 +85,8 @@ export function FavoriteButton({ equipmentId }: { equipmentId: string }) {
       className={cn(
         "w-full gap-2 rounded-full",
         isFavorite
-          ? "bg-linear-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500"
-          : "border-violet-100 bg-white text-violet-700 hover:bg-violet-50 hover:text-violet-800",
+          ? "bg-linear-to-r from-[#315c3c] to-[#6f8f4c] text-white hover:from-[#3a6a45] hover:to-[#7ba356]"
+          : "border-[#dfe6d8] bg-white text-[#315c3c] hover:bg-[#edf3e2] hover:text-[#27492f]",
       )}
     >
       <Heart className="size-4" fill={isFavorite ? "currentColor" : "none"} aria-hidden="true" />

@@ -16,14 +16,14 @@ export const metadata: Metadata = {
 };
 
 const primaryCtaClass = cn(
-  "h-12 rounded-full px-6 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition-all hover:-translate-y-0.5",
+  "h-12 rounded-full px-6 text-sm font-semibold text-white shadow-lg shadow-[#315c3c]/20 transition-all hover:-translate-y-0.5",
   "bg-linear-to-r",
   publicTone.gradient,
-  "hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+  "hover:from-[#3a6a45] hover:via-[#5b8249] hover:to-[#8fb361]",
 );
 
 const secondaryCtaClass =
-  "h-12 rounded-full border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-violet-50 hover:text-violet-700";
+  "h-12 rounded-full border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-[#edf3e2] hover:text-[#315c3c]";
 
 const steps = [
   {
@@ -51,7 +51,7 @@ export default function GetStartedPage() {
         <div aria-hidden="true" className={appSurfaces.pageGlow} />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-40 bottom-0 size-[30rem] rounded-full bg-fuchsia-200/60 blur-[130px]"
+          className="pointer-events-none absolute -right-40 bottom-0 size-[30rem] rounded-full bg-[#d9ef94]/20 blur-[130px]"
         />
         <div
           aria-hidden="true"
@@ -76,7 +76,7 @@ export default function GetStartedPage() {
               <h1 className="mt-7 text-[clamp(2.8rem,6vw,4.6rem)] leading-[0.98] font-bold tracking-[-0.055em] text-slate-900">
                 Good gear is
                 <br />
-                <span className="bg-linear-to-r from-violet-600 via-fuchsia-600 to-rose-500 bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-[#315c3c] via-[#4c6d45] to-[#7ba356] bg-clip-text text-transparent">
                   one click away.
                 </span>
               </h1>
@@ -87,7 +87,7 @@ export default function GetStartedPage() {
               </p>
 
               <div className="mt-9 flex flex-wrap gap-3">
-                <Link href="/signup" className={buttonVariants({ size: "lg", className: primaryCtaClass })}>
+                <Link href="/signup" className={buttonVariants({ size: "lg", className: cn(primaryCtaClass, "cta-green-link") })}>
                   Create your account
                   <ArrowUpRight className="size-4" />
                 </Link>
@@ -109,7 +109,7 @@ export default function GetStartedPage() {
                           "text-[10px] font-bold",
                           initials === "PL"
                             ? "bg-slate-800 text-white"
-                            : "bg-linear-to-br from-violet-200 to-fuchsia-200 text-violet-700",
+                            : "bg-linear-to-br from-[#e8efdc] to-[#d9ef94] text-[#315c3c]",
                         )}
                       >
                         {initials}
@@ -158,7 +158,7 @@ export default function GetStartedPage() {
 
                 <Separator className="my-6 bg-slate-200/80" />
 
-                <div className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
+                <div className="rounded-2xl border border-[#dfe6d8] bg-[#f3f7ee]/80 p-4">
                   <p className="text-sm font-bold text-slate-900">Just browsing?</p>
                   <p className={cn("mt-1", appSurfaces.body)}>
                     Explore the catalog first. You can create an account when you are ready to book.

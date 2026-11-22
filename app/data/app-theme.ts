@@ -1,19 +1,19 @@
 /**
  * Shared visual language for authenticated and transactional pages.
  *
- * The landing page uses vivid gradients in small, deliberate accents while
- * keeping body copy on high-contrast light surfaces. These tokens let every
- * app screen follow the same rule without burying text under color.
+ * Fieldkit uses one calm palette everywhere: deep ink surfaces, warm paper
+ * backgrounds, and olive/lime accents. Role tones only shift the accent hue
+ * slightly — they never introduce a competing gradient or sidebar color.
  */
 
 export type AppRoleTone = "admin" | "owner" | "customer";
 
 export type AppTone = {
-  /** Full-strength gradient for compact decorative areas. */
+  /** Full-strength accent gradient for compact decorative areas. */
   gradient: string;
   /** Sidebar surface; dark enough for white text. */
   sidebar: string;
-  /** Hero/banner gradient; never used behind long body copy. */
+  /** Hero/banner surface; never used behind long body copy. */
   banner: string;
   /** Soft tinted badge: dark text on a very light background. */
   softBadge: string;
@@ -27,60 +27,53 @@ export type AppTone = {
   panelAccent: string;
 };
 
+const baseTone = {
+  sidebar: "from-[#1b3224] via-[#17241b] to-[#101b15]",
+  panelAccent: "from-[#4c6d45] via-[#7ba356] to-[#d9ef94]",
+} satisfies Pick<AppTone, "sidebar" | "panelAccent">;
+
 export const roleTones: Record<AppRoleTone, AppTone> = {
   admin: {
-    gradient: "from-violet-600 via-fuchsia-600 to-rose-500",
-    sidebar: "from-[#1e1b4b] via-[#312e81] to-[#0f172a]",
-    banner: "from-violet-600 via-purple-600 to-fuchsia-500",
-    softBadge: "bg-violet-50 text-violet-700 ring-violet-100",
-    iconTile: "bg-violet-100 text-violet-700",
-    accentText: "text-violet-700",
-    bar: "from-violet-500 to-fuchsia-500",
-    panelAccent: "from-violet-500 via-fuchsia-500 to-rose-500",
+    ...baseTone,
+    gradient: "from-[#315c3c] to-[#6f8f4c]",
+    banner: "from-[#1b3224] via-[#2b4b34] to-[#3f6b4a]",
+    softBadge: "bg-[#edf3e2] text-[#315c3c] ring-[#dce7cd]",
+    iconTile: "bg-[#edf3e2] text-[#315c3c]",
+    accentText: "text-[#315c3c]",
+    bar: "from-[#4f7b4e] to-[#7ba356]",
   },
   owner: {
-    gradient: "from-amber-500 via-orange-500 to-rose-500",
-    sidebar: "from-[#431407] via-[#7c2d12] to-[#1c1917]",
-    banner: "from-amber-500 via-orange-500 to-rose-500",
-    softBadge: "bg-amber-50 text-amber-800 ring-amber-100",
-    iconTile: "bg-amber-100 text-amber-700",
-    accentText: "text-amber-700",
-    bar: "from-amber-400 to-orange-500",
-    panelAccent: "from-amber-400 via-orange-500 to-rose-500",
+    ...baseTone,
+    gradient: "from-[#4b6337] to-[#9aa95e]",
+    banner: "from-[#1b3224] via-[#354a2c] to-[#61733f]",
+    softBadge: "bg-[#f1f4e3] text-[#55612f] ring-[#e2e8ce]",
+    iconTile: "bg-[#f1f4e3] text-[#55612f]",
+    accentText: "text-[#55612f]",
+    bar: "from-[#61733f] to-[#a7b765]",
   },
   customer: {
-    gradient: "from-emerald-500 via-teal-500 to-sky-500",
-    sidebar: "from-[#052e2b] via-[#065f46] to-[#0f172a]",
-    banner: "from-teal-500 via-emerald-500 to-lime-500",
-    softBadge: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-    iconTile: "bg-emerald-100 text-emerald-700",
-    accentText: "text-emerald-700",
-    bar: "from-emerald-400 to-teal-500",
-    panelAccent: "from-emerald-400 via-teal-500 to-sky-500",
+    ...baseTone,
+    gradient: "from-[#315c3c] to-[#6d9189]",
+    banner: "from-[#1b3224] via-[#294a39] to-[#396b5c]",
+    softBadge: "bg-[#e9f2ea] text-[#33614e] ring-[#d5e5d9]",
+    iconTile: "bg-[#e9f2ea] text-[#33614e]",
+    accentText: "text-[#33614e]",
+    bar: "from-[#3f7b62] to-[#78a58c]",
   },
 };
 
 /** Neutral accents for public pages such as catalog, auth and checkout. */
-export const publicTone: AppTone = {
-  gradient: "from-violet-600 via-fuchsia-600 to-rose-500",
-  sidebar: "from-slate-900 via-violet-950 to-slate-950",
-  banner: "from-violet-600 via-fuchsia-600 to-rose-500",
-  softBadge: "bg-violet-50 text-violet-700 ring-violet-100",
-  iconTile: "bg-violet-100 text-violet-700",
-  accentText: "text-violet-700",
-  bar: "from-violet-500 to-fuchsia-500",
-  panelAccent: "from-violet-500 via-fuchsia-500 to-rose-500",
-};
+export const publicTone: AppTone = roleTones.admin;
 
-/** Reusable surface recipes. Text always remains slate-900 / slate-600. */
+/** Reusable surface recipes. Text always stays high contrast on light paper. */
 export const appSurfaces = {
-  page: "min-h-screen bg-[#f8fafc] text-slate-900",
+  page: "min-h-screen bg-[#edf3e9] text-[#17241b]",
   pageGlow:
-    "pointer-events-none absolute -top-40 left-1/4 size-[28rem] rounded-full bg-violet-200/50 blur-[120px]",
-  card: "rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.5)] backdrop-blur-sm",
-  softCard: "rounded-2xl border border-slate-200/70 bg-white/80",
-  eyebrow: "text-[10px] font-bold tracking-[0.18em] text-slate-400 uppercase",
-  body: "text-sm leading-relaxed text-slate-600",
-  link: "font-semibold text-violet-700 transition-colors hover:text-fuchsia-700",
-  divider: "border-slate-200/80",
+    "pointer-events-none absolute -top-40 left-1/4 size-[28rem] rounded-full bg-[#b8d997]/30 blur-[120px]",
+  card: "rounded-2xl border border-[#dce6d7] bg-[#fffefa] shadow-[0_18px_45px_-36px_rgba(23,36,27,0.55)]",
+  softCard: "rounded-xl border border-[#dce6d7] bg-[#f5f8ef]",
+  eyebrow: "text-[10px] font-bold tracking-[0.16em] text-[#4c6d45] uppercase",
+  body: "text-sm leading-relaxed text-[#5c675c]",
+  link: "font-semibold text-[#315c3c] transition-colors hover:text-[#4c6d45]",
+  divider: "border-[#e0e6da]",
 } as const;

@@ -53,7 +53,7 @@ export default function Loading() {
               </svg>
             </span>
             <span className="text-lg font-bold tracking-tight text-slate-900">
-              fieldkit<span className="text-violet-600">.</span>
+              fieldkit<span className="text-[#4c6d45]">.</span>
             </span>
           </Link>
 

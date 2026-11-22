@@ -5,38 +5,40 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --paper: #f7f6f1;
-  --ink: #20231c;
-  --muted: #74776d;
-  --muted-surface: #efefe9;
-  --olive: #65704a;
-  --olive-dark: #343c2c;
-  --lime: #d7ed82;
-  --line: #e4e3db;
+  /* One palette for the whole product: deep ink, warm paper, olive + lime. */
+  --paper: #f6f7f2;
+  --ink: #17241b;
+  --ink-soft: #465448;
+  --muted: #6d786d;
+  --muted-surface: #eef1e9;
+  --olive: #4c6d45;
+  --olive-dark: #1b3224;
+  --lime: #d9ef94;
+  --line: #e0e6da;
   --font-fieldkit-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: #fcfbf7;
+  --card: #ffffff;
   --card-foreground: var(--ink);
-  --popover: #fcfbf7;
+  --popover: #ffffff;
   --popover-foreground: var(--ink);
-  --primary: #6d28d9;
-  --primary-foreground: #fff;
-  --secondary: #f3e8ff;
-  --secondary-foreground: #5b21b6;
-  --muted-foreground: #74776d;
-  --accent: #fce7f3;
-  --accent-foreground: #9d174d;
-  --destructive: oklch(0.577 0.245 27.325);
+  --primary: #315c3c;
+  --primary-foreground: #ffffff;
+  --secondary: #e8efdc;
+  --secondary-foreground: #27492f;
+  --muted-foreground: var(--muted);
+  --accent: #edf3e2;
+  --accent-foreground: #315c3c;
+  --destructive: #a63f36;
   --border: var(--line);
-  --input: #dedfd6;
-  --ring: #8b5cf6;
-  --chart-1: #8b5cf6;
-  --chart-2: #ec4899;
-  --chart-3: #0ea5e9;
-  --chart-4: #10b981;
-  --chart-5: #f59e0b;
-  --radius: 0.625rem;
+  --input: #d7dfd1;
+  --ring: #6d9a62;
+  --chart-1: #4f7b4e;
+  --chart-2: #7ba356;
+  --chart-3: #b9c86f;
+  --chart-4: #a77b45;
+  --chart-5: #6d9189;
+  --radius: 0.875rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -53,6 +55,14 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-fieldkit-sans);
+  --color-brand-ink: var(--ink);
+  --color-brand-ink-soft: var(--ink-soft);
+  --color-brand-olive: var(--olive);
+  --color-brand-olive-dark: var(--olive-dark);
+  --color-brand-lime: var(--lime);
+  --color-brand-accent: #edf3e2;
+  --color-brand-line: var(--line);
+  --color-brand-muted: var(--muted);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -112,6 +122,14 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Keep foreground contrast for green CTA links despite the global anchor color. */
+a.cta-green-link,
+a.cta-green-link:visited,
+a.cta-green-link:hover,
+a.cta-green-link:focus-visible {
+  color: #fff;
 }
 
 button,
@@ -954,8 +972,8 @@ a {
   padding: 6px 8px;
   border: 1px solid #e1e1d9;
   border-radius: 2px;
-  background: transparent;
-  color: var(--olive-dark);
+  background: var(--olive-dark);
+  color: #fff;
   font: inherit;
   font-size: 8px;
   font-weight: 650;
@@ -963,8 +981,8 @@ a {
 }
 
 .details-coming-soon:hover {
-  border-color: #b7c19f;
-  background: #edf0e4;
+  border-color: #27492f;
+  background: #27492f;
 }
 
 .catalog-empty {
@@ -4528,4 +4546,69 @@ a {
   .float-slow {
     animation: none;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Shared Fieldkit surface recipes (ink + olive + lime)
+   -------------------------------------------------------------------------- */
+.brand-ink-surface {
+  background:
+    radial-gradient(circle at 12% 8%, rgb(217 239 148 / 12%), transparent 32%),
+    radial-gradient(circle at 92% 84%, rgb(76 109 69 / 28%), transparent 38%),
+    linear-gradient(160deg, #1b3224 0%, #17241b 52%, #101b15 100%);
+}
+
+.brand-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 6%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 6%) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+.brand-lime-glow {
+  background: radial-gradient(circle, rgb(217 239 148 / 22%), transparent 68%);
+}
+
+.surface-card {
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) * 1.15);
+  background: #fff;
+  box-shadow: 0 18px 45px -36px rgb(23 36 27 / 55%);
+}
+
+.surface-soft {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcf8;
+}
+
+.eyebrow-accent {
+  color: var(--olive);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.quiet-link {
+  color: var(--olive-dark);
+  font-weight: 600;
+  transition: color 160ms ease;
+}
+
+.quiet-link:hover {
+  color: var(--olive);
+}
+
+.dashboard-empty-cta {
+  color: #fff;
+}
+.dashboard-empty-cta:hover {
+  color: #fff;
+}
+
+.dashboard-hero-cta,
+.dashboard-hero-cta:hover {
+  color: #315c3c;
 }

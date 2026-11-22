@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import { CheckCircle2, Info, TriangleAlert, X } from "lucide-react";
-import { publicTone } from "../data/app-theme";
 import { cn } from "@/lib/utils";
 
 type ToastKind = "success" | "error" | "info";
@@ -26,22 +25,22 @@ const toastStyles: Record<
   { bar: string; tile: string; icon: string; ring: string }
 > = {
   success: {
-    bar: "from-emerald-500 via-teal-500 to-sky-500",
-    tile: "bg-emerald-50 text-emerald-700",
-    icon: "text-emerald-600",
-    ring: "ring-emerald-100",
+    bar: "from-[#4f7b4e] to-[#8fb361]",
+    tile: "bg-[#edf3e2] text-[#315c3c]",
+    icon: "text-[#315c3c]",
+    ring: "ring-[#dce7cd]",
   },
   error: {
-    bar: "from-rose-500 via-fuchsia-500 to-violet-600",
-    tile: "bg-rose-50 text-rose-700",
-    icon: "text-rose-600",
-    ring: "ring-rose-100",
+    bar: "from-[#b45247] to-[#d17a6f]",
+    tile: "bg-[#fdeceb] text-[#8f352d]",
+    icon: "text-[#8f352d]",
+    ring: "ring-[#f3d1cd]",
   },
   info: {
-    bar: publicTone.gradient,
-    tile: publicTone.iconTile,
-    icon: publicTone.accentText,
-    ring: "ring-violet-100",
+    bar: "from-[#315c3c] to-[#6d9189]",
+    tile: "bg-[#e9f2ea] text-[#33614e]",
+    icon: "text-[#33614e]",
+    ring: "ring-[#d5e5d9]",
   },
 };
 
@@ -74,8 +73,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           return (
             <div
               className={cn(
-                "pointer-events-auto relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 pl-5 pr-3 text-slate-900",
-                "shadow-[0_18px_45px_-24px_rgba(15,23,42,0.45)] ring-1 ring-slate-900/5",
+                "pointer-events-auto relative overflow-hidden rounded-2xl border border-[#e0e6da] bg-white p-4 pr-3 pl-5 text-[#17241b]",
+                "shadow-[0_18px_45px_-24px_rgba(23,36,27,0.45)] ring-1 ring-[#17241b]/5",
                 "animate-in fade-in slide-in-from-bottom-2 duration-200",
               )}
               key={toast.id}
@@ -101,11 +100,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     <Info size={18} className={styles.icon} />
                   )}
                 </span>
-                <span className="flex-1 text-sm leading-relaxed text-slate-700">
+                <span className="flex-1 text-sm leading-relaxed text-[#465448]">
                   {toast.message}
                 </span>
                 <button
-                  className="grid size-7 shrink-0 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500"
+                  className="grid size-7 shrink-0 place-items-center rounded-lg text-[#6d786d] transition-colors hover:bg-[#edf3e2] hover:text-[#315c3c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d9a62]"
                   type="button"
                   aria-label="Dismiss notification"
                   onClick={() => dismiss(toast.id)}

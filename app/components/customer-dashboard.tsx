@@ -6,16 +6,16 @@ import {
   ArrowUpRight,
   CalendarDays,
   Camera,
-  CircleDollarSign,
   Heart,
   PackageSearch,
   Sparkles,
   Tractor,
   Truck,
   Wrench,
+  type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { appSurfaces, roleTones } from "../data/app-theme";
 import { apiRequest, formatCurrency, type EquipmentListing } from "../lib/api";
 import { DashboardShell } from "./dashboard-shell";
@@ -27,6 +27,7 @@ import {
   PanelLoading,
   StatCard,
   StatusPill,
+  TakaSign,
 } from "./dashboard-ui";
 import { useDashboardSession } from "./use-dashboard-session";
 
@@ -43,13 +44,17 @@ type Booking = {
   equipment?: { id: string; image?: string; location?: string } | null;
 };
 type Favorite = { favoriteId: string; equipment: EquipmentListing | null };
-type Payment = { id: string; bookingId: string; status: string };
 
 const tone = roleTones.customer;
-// The shared UI kit reads tone from context; these two props still render inline CSS.
-const statGradient = "linear-gradient(135deg, #10b981, #14b8a6, #0ea5e9)";
-const statSoft = "#d1fae5";
-const heroGlow = "linear-gradient(135deg, #0d9488, #059669, #65a30d)";
+const statGradient = "linear-gradient(135deg, #315c3c, #4f7b4e, #6d9189)";
+const statSoft = "#e9f2ea";
+const statPalettes = [
+  { gradient: "linear-gradient(135deg, #315c3c, #6f9b5c)", soft: "#edf5e8" },
+  { gradient: "linear-gradient(135deg, #256a7a, #58a6a2)", soft: "#eaf6f5" },
+  { gradient: "linear-gradient(135deg, #70479b, #a66dc3)", soft: "#f4eef9" },
+  { gradient: "linear-gradient(135deg, #b16a2f, #e2a64d)", soft: "#fff5e8" },
+];
+const heroGlow = "linear-gradient(135deg, #1b3224, #315c3c, #396b5c)";
 
 function formatDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
@@ -57,20 +62,46 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-BD", { day: "numeric", month: "short", year: "numeric" }).format(date);
 }
 
-const categories = [
-  { name: "Construction", icon: Wrench, tile: "bg-orange-50 text-orange-600", bar: "from-orange-400 to-amber-500" },
-  { name: "Photography", icon: Camera, tile: "bg-violet-50 text-violet-600", bar: "from-violet-400 to-fuchsia-500" },
-  { name: "Vehicles", icon: Truck, tile: "bg-sky-50 text-sky-600", bar: "from-sky-400 to-blue-500" },
-  { name: "Agriculture", icon: Tractor, tile: "bg-emerald-50 text-emerald-600", bar: "from-emerald-400 to-teal-500" },
+const categoryLooks = [
+  { icon: Wrench, tile: "bg-orange-100 text-orange-700", bar: "from-orange-400 to-amber-500", surface: "border-orange-200/80 from-white to-orange-50/80" },
+  { icon: Camera, tile: "bg-lime-100 text-[#4c6d45]", bar: "from-[#5d8350] to-[#8fb361]", surface: "border-lime-200/80 from-white to-lime-50/80" },
+  { icon: Truck, tile: "bg-sky-100 text-sky-700", bar: "from-sky-400 to-blue-500", surface: "border-sky-200/80 from-white to-sky-50/80" },
+  { icon: Tractor, tile: "bg-emerald-100 text-emerald-700", bar: "from-emerald-400 to-teal-500", surface: "border-emerald-200/80 from-white to-emerald-50/80" },
+  { icon: PackageSearch, tile: "bg-violet-100 text-violet-700", bar: "from-violet-400 to-fuchsia-500", surface: "border-violet-200/80 from-white to-violet-50/80" },
 ];
+
+type DashboardCategory = { name: string; count: number };
+
+function categoryIcon(name: string): LucideIcon {
+  const value = name.toLowerCase();
+  if (value.includes("photo") || value.includes("camera")) return Camera;
+  if (value.includes("vehicle") || value.includes("transport")) return Truck;
+  if (value.includes("agri") || value.includes("farm")) return Tractor;
+  if (value.includes("construction")) return Wrench;
+  return PackageSearch;
+}
 
 export function CustomerDashboard() {
   const { user, token, isLoading, error, signOut, refreshSession } = useDashboardSession("customer");
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [categories, setCategories] = useState<DashboardCategory[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    apiRequest<{ items: DashboardCategory[] }>("/equipment/categories")
+      .then(({ items }) => {
+        if (active) setCategories(items);
+      })
+      .catch(() => {
+        if (active) setCategories([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -80,9 +111,8 @@ export function CustomerDashboard() {
     async function loadCustomerData() {
       setDataLoading(true);
       setDataError("");
-      const [bookingsResult, paymentsResult, favoritesResult] = await Promise.allSettled([
+      const [bookingsResult, favoritesResult] = await Promise.allSettled([
         apiRequest<{ items: Booking[] }>("/bookings/mine", { headers }),
-        apiRequest<{ items: Payment[] }>("/payments/mine", { headers }),
         apiRequest<{ items: Favorite[] }>("/favorites", { headers }),
       ]);
 
@@ -90,15 +120,12 @@ export function CustomerDashboard() {
       const failures: string[] = [];
       if (bookingsResult.status === "fulfilled") setBookings(bookingsResult.value.items);
       else failures.push("your rentals");
-      if (paymentsResult.status === "fulfilled") setPayments(paymentsResult.value.items);
-      else failures.push("payments");
       if (favoritesResult.status === "fulfilled") setFavorites(favoritesResult.value.items);
       else failures.push("favorites");
 
       if (failures.length > 0) {
         let reason: unknown = null;
         if (bookingsResult.status === "rejected") reason = bookingsResult.reason;
-        else if (paymentsResult.status === "rejected") reason = paymentsResult.reason;
         else if (favoritesResult.status === "rejected") reason = favoritesResult.reason;
         setDataError(
           `Could not load ${failures.join(", ")}. ${
@@ -130,10 +157,13 @@ export function CustomerDashboard() {
     }
   }
 
-  const paidBookingTotal = bookings
+  const dashboardBookings = bookings.filter(
+    (booking) => !["cancelled", "rejected"].includes(booking.bookingStatus.toLowerCase()),
+  );
+  const paidBookingTotal = dashboardBookings
     .filter((booking) => booking.paymentStatus === "paid")
     .reduce((total, booking) => total + booking.totalAmount, 0);
-  const activeBookings = bookings.filter((booking) =>
+  const activeBookings = dashboardBookings.filter((booking) =>
     ["pending", "confirmed"].includes(booking.bookingStatus.toLowerCase()),
   );
   const firstName = user?.name?.split(" ")[0] || "renter";
@@ -142,8 +172,8 @@ export function CustomerDashboard() {
   const stats = [
     {
       label: "Total bookings",
-      value: bookings.length,
-      hint: "Everything you've reserved",
+      value: dashboardBookings.length,
+      hint: "Cancelled requests excluded",
       icon: CalendarDays,
       ...statStyle,
     },
@@ -164,8 +194,8 @@ export function CustomerDashboard() {
     {
       label: "Total spent",
       value: formatCurrency(paidBookingTotal),
-      hint: `${payments.filter((payment) => payment.status === "paid").length} confirmed payments`,
-      icon: CircleDollarSign,
+      hint: `${dashboardBookings.filter((booking) => booking.paymentStatus === "paid").length} confirmed payments`,
+      icon: TakaSign,
       ...statStyle,
     },
   ];
@@ -189,7 +219,7 @@ export function CustomerDashboard() {
         action={
           <Link
             href="/equipment"
-            className={`inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 ${tone.accentText}`}
+            className={`dashboard-hero-cta inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 ${tone.accentText}`}
           >
             Find equipment <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
@@ -203,8 +233,8 @@ export function CustomerDashboard() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
+            {stats.map((stat, index) => (
+              <StatCard key={stat.label} {...stat} {...statPalettes[index % statPalettes.length]} />
             ))}
           </div>
 
@@ -223,7 +253,7 @@ export function CustomerDashboard() {
                 </Link>
               }
             >
-              {bookings.length === 0 ? (
+              {dashboardBookings.length === 0 ? (
                 <EmptyState
                   icon={CalendarDays}
                   title="No rentals yet"
@@ -231,9 +261,7 @@ export function CustomerDashboard() {
                   action={
                     <Link
                       href="/equipment"
-                      className={buttonVariants({
-                        className: `h-9 rounded-xl text-white shadow-sm hover:brightness-110 ${tone.gradient}`,
-                      })}
+                      className="dashboard-empty-cta inline-flex h-9 items-center gap-2 rounded-xl bg-[#315c3c] px-3 text-sm font-semibold shadow-sm transition-colors hover:bg-[#27492f]"
                     >
                       Browse equipment <ArrowUpRight size={14} aria-hidden="true" />
                     </Link>
@@ -241,7 +269,7 @@ export function CustomerDashboard() {
                 />
               ) : (
                 <div className="space-y-3">
-                  {bookings.slice(0, 5).map((booking) => (
+                  {dashboardBookings.slice(0, 5).map((booking) => (
                     <article key={booking.id} className={`p-4 transition-colors hover:border-slate-300 ${appSurfaces.softCard}`}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -276,14 +304,14 @@ export function CustomerDashboard() {
                 {[
                   { label: "Browse all equipment", href: "/equipment", icon: PackageSearch },
                   { label: "Manage account details", href: "/account/profile", icon: Wrench },
-                  { label: "View payment receipts", href: "/account/rentals", icon: CircleDollarSign },
+                  { label: "View payment receipts", href: "/account/rentals", icon: TakaSign },
                 ].map((action) => {
                   const Icon = action.icon;
                   return (
                     <Link
                       key={action.label}
                       href={action.href}
-                      className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm"
+                      className="flex items-center gap-3 rounded-xl border border-[#dce6d7] bg-[#f8faf5] p-3 transition-all hover:-translate-y-0.5 hover:border-[#b7cba9] hover:bg-white hover:shadow-sm"
                     >
                       <span className={`grid size-9 place-items-center rounded-lg ${tone.iconTile}`}>
                         <Icon size={16} aria-hidden="true" />
@@ -318,9 +346,7 @@ export function CustomerDashboard() {
                 action={
                   <Link
                     href="/equipment"
-                    className={buttonVariants({
-                      className: `h-9 rounded-xl text-white shadow-sm hover:brightness-110 ${tone.gradient}`,
-                    })}
+                    className="dashboard-empty-cta inline-flex h-9 items-center gap-2 rounded-xl bg-[#315c3c] px-3 text-sm font-semibold shadow-sm transition-colors hover:bg-[#27492f]"
                   >
                     Explore equipment <ArrowUpRight size={14} aria-hidden="true" />
                   </Link>
@@ -355,7 +381,7 @@ export function CustomerDashboard() {
                               type="button"
                               size="xs"
                               variant="ghost"
-                              className="text-rose-500 hover:bg-rose-50"
+                              className="text-[#b45247] hover:bg-[#fff7f6]"
                               onClick={() => removeFavorite(item.id)}
                             >
                               Remove
@@ -372,19 +398,21 @@ export function CustomerDashboard() {
 
           <Panel title="Explore by category" subtitle="Find gear for whatever you're making" icon={PackageSearch} soft={tone.iconTile} accent={tone.panelAccent}>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {categories.map((category) => {
-                const Icon = category.icon;
+              {categories.map((category, index) => {
+                const look = categoryLooks[index % categoryLooks.length];
+                const Icon = categoryIcon(category.name);
                 return (
                   <Link
                     key={category.name}
                     href={`/equipment?category=${encodeURIComponent(category.name)}`}
-                    className="group overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 transition-all hover:-translate-y-1 hover:border-slate-300 hover:shadow-md"
+                    className={`group overflow-hidden rounded-xl border bg-linear-to-br p-4 transition-all hover:-translate-y-1 hover:shadow-md ${look.surface}`}
                   >
-                    <span className={`block h-0.5 w-10 rounded-full bg-linear-to-r ${category.bar}`} />
-                    <span className={`mt-3 grid size-10 place-items-center rounded-xl ${category.tile}`}>
+                    <span className={`block h-0.5 w-10 rounded-full bg-linear-to-r ${look.bar}`} />
+                    <span className={`mt-3 grid size-10 place-items-center rounded-xl ${look.tile}`}>
                       <Icon size={19} aria-hidden="true" />
                     </span>
                     <p className="mt-3 text-sm font-semibold text-slate-900">{category.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">{category.count} {category.count === 1 ? "listing" : "listings"}</p>
                     <p className={`mt-1 inline-flex items-center gap-1 text-xs font-medium transition-colors ${tone.accentText}`}>
                       Explore <ArrowUpRight size={12} aria-hidden="true" />
                     </p>

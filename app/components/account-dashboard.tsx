@@ -112,7 +112,7 @@ function statusBadgeClass(status: string) {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
   if (value.includes("fail") || value.includes("cancel") || value.includes("refund")) {
-    return "border-rose-200 bg-rose-50 text-rose-700";
+    return "border-[#f0d6d3] bg-[#fff7f6] text-rose-700";
   }
   if (value.includes("pending") || value.includes("processing")) {
     return "border-amber-200 bg-amber-50 text-amber-700";
@@ -132,16 +132,16 @@ function initialsFor(name?: string) {
 
 const inputClass = cn(
   "h-11 rounded-xl border-slate-200 bg-slate-50/80 px-3.5 text-sm text-slate-900 shadow-sm transition-colors",
-  "placeholder:text-slate-400 focus-visible:border-violet-400 focus-visible:ring-3 focus-visible:ring-violet-200/60",
+  "placeholder:text-slate-400 focus-visible:border-[#7ba356] focus-visible:ring-3 focus-visible:ring-[#cfe0bf]/60",
   "read-only:bg-slate-100/80 read-only:text-slate-500",
 );
 
 const primaryButtonClass = cn(
-  "h-11 w-full rounded-full px-6 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25",
+  "h-11 w-full rounded-full px-6 text-sm font-semibold text-white shadow-lg shadow-[#315c3c]/20",
   "transition-all hover:-translate-y-0.5",
   "bg-linear-to-r",
   publicTone.gradient,
-  "hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+  "hover:from-[#3a6a45] hover:via-[#5b8249] hover:to-[#8fb361]",
 );
 
 export function AccountDashboard({
@@ -433,7 +433,7 @@ export function AccountDashboard({
         <div aria-hidden="true" className={appSurfaces.pageGlow} />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-40 top-10 size-[26rem] rounded-full bg-fuchsia-200/50 blur-[120px]"
+          className="pointer-events-none absolute -right-40 top-10 size-[26rem] rounded-full bg-[#d9ef94]/20 blur-[120px]"
         />
 
         <div className="relative mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
@@ -466,7 +466,7 @@ export function AccountDashboard({
                   type="button"
                   variant="outline"
                   onClick={signOut}
-                  className="h-10 rounded-full border-slate-200 bg-white text-slate-700 hover:bg-violet-50 hover:text-violet-700"
+                  className="h-10 rounded-full border-slate-200 bg-white text-slate-700 hover:bg-[#edf3e2] hover:text-[#315c3c]"
                 >
                   <LogOut className="size-4" />
                   Sign out
@@ -478,12 +478,12 @@ export function AccountDashboard({
           {isLoading ? (
             <div className={cn(appSurfaces.card, "p-7 sm:p-9")} role="status">
               <p className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <span className="size-2 animate-pulse rounded-full bg-violet-500" />
+                <span className="size-2 animate-pulse rounded-full bg-[#edf3e2]0" />
                 Loading your account...
               </p>
               <div className="mt-6 grid gap-3">
-                <Skeleton className="h-20 w-full rounded-2xl bg-violet-100/80" />
-                <Skeleton className="h-20 w-full rounded-2xl bg-fuchsia-100/70" />
+                <Skeleton className="h-20 w-full rounded-2xl bg-[#e8efdc]/80" />
+                <Skeleton className="h-20 w-full rounded-2xl bg-[#e8efdc]/70" />
                 <Skeleton className="h-20 w-2/3 rounded-2xl bg-sky-100/70" />
               </div>
             </div>
@@ -562,7 +562,7 @@ export function AccountDashboard({
                     </p>
                   )}
                   {error && (
-                    <Alert variant="destructive" className="rounded-xl border-rose-200 bg-rose-50/80">
+                    <Alert variant="destructive" className="rounded-xl border-[#f0d6d3] bg-[#fff7f6]/80">
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
@@ -612,7 +612,7 @@ export function AccountDashboard({
               )}
             >
               {error && (
-                <Alert variant="destructive" className="rounded-xl border-rose-200 bg-rose-50/80">
+                <Alert variant="destructive" className="rounded-xl border-[#f0d6d3] bg-[#fff7f6]/80">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -636,7 +636,7 @@ export function AccountDashboard({
           ) : (
             <div className="grid gap-5">
               {error && (
-                <Alert variant="destructive" className="rounded-2xl border-rose-200 bg-rose-50/80">
+                <Alert variant="destructive" className="rounded-2xl border-[#f0d6d3] bg-[#fff7f6]/80">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -664,28 +664,28 @@ export function AccountDashboard({
                 <TabsList className="flex w-full flex-wrap justify-start gap-1 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-sm group-data-horizontal/tabs:h-auto">
                   <TabsTrigger
                     value="overview"
-                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-violet-600 data-active:via-fuchsia-600 data-active:to-rose-500 data-active:text-white data-active:shadow-md data-active:shadow-fuchsia-500/20"
+                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-[#315c3c] data-active:via-[#4c6d45] data-active:to-[#7ba356] data-active:text-white data-active:shadow-md data-active:shadow-[#315c3c]/15"
                   >
                     <LayoutDashboard className="size-4" />
                     Overview
                   </TabsTrigger>
                   <TabsTrigger
                     value="rentals"
-                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-violet-600 data-active:via-fuchsia-600 data-active:to-rose-500 data-active:text-white data-active:shadow-md data-active:shadow-fuchsia-500/20"
+                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-[#315c3c] data-active:via-[#4c6d45] data-active:to-[#7ba356] data-active:text-white data-active:shadow-md data-active:shadow-[#315c3c]/15"
                   >
                     <CalendarDays className="size-4" />
                     My rentals
                   </TabsTrigger>
                   <TabsTrigger
                     value="favorites"
-                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-violet-600 data-active:via-fuchsia-600 data-active:to-rose-500 data-active:text-white data-active:shadow-md data-active:shadow-fuchsia-500/20"
+                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-[#315c3c] data-active:via-[#4c6d45] data-active:to-[#7ba356] data-active:text-white data-active:shadow-md data-active:shadow-[#315c3c]/15"
                   >
                     <Heart className="size-4" />
                     Favorites
                   </TabsTrigger>
                   <TabsTrigger
                     value="profile"
-                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-violet-600 data-active:via-fuchsia-600 data-active:to-rose-500 data-active:text-white data-active:shadow-md data-active:shadow-fuchsia-500/20"
+                    className="h-9 gap-2 rounded-xl px-4 text-slate-600 data-active:bg-linear-to-r data-active:from-[#315c3c] data-active:via-[#4c6d45] data-active:to-[#7ba356] data-active:text-white data-active:shadow-md data-active:shadow-[#315c3c]/15"
                   >
                     <UserRound className="size-4" />
                     Profile
@@ -705,7 +705,7 @@ export function AccountDashboard({
                     <div className={cn("h-1.5 w-full bg-linear-to-r", publicTone.panelAccent)} />
                     <CardHeader className="p-6 pb-0 sm:p-7 sm:pb-0">
                       <div className="flex items-start gap-3">
-                        <Avatar className="size-11 ring-2 ring-violet-100">
+                        <Avatar className="size-11 ring-2 ring-[#dce7cd]">
                           <AvatarFallback className={cn("text-xs font-bold", publicTone.softBadge)}>
                             {initialsFor(profile?.name)}
                           </AvatarFallback>
@@ -797,7 +797,7 @@ export function AccountDashboard({
                             onChange={(event) => setAddress(event.target.value)}
                             className={cn(
                               "min-h-24 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-colors",
-                              "placeholder:text-slate-400 focus-visible:border-violet-400 focus-visible:ring-3 focus-visible:ring-violet-200/60",
+                              "placeholder:text-slate-400 focus-visible:border-[#7ba356] focus-visible:ring-3 focus-visible:ring-[#cfe0bf]/60",
                             )}
                           />
                         </div>
@@ -851,7 +851,7 @@ export function AccountDashboard({
                             const payment = payments.find((item) => String(item.bookingId) === booking.id);
                             return (
                               <article
-                                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors hover:border-violet-200"
+                                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors hover:border-[#d7dfd1]"
                                 key={booking.id}
                               >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -908,7 +908,7 @@ export function AccountDashboard({
                                     variant="outline"
                                     size="sm"
                                     onClick={() => setReceiptBooking(booking)}
-                                    className="mt-4 h-9 rounded-full border-violet-200 bg-violet-50/60 text-violet-700 hover:bg-violet-100"
+                                    className="mt-4 h-9 rounded-full border-[#d7dfd1] bg-[#f3f7ee]/80 text-[#315c3c] hover:bg-[#e8efdc]"
                                   >
                                     <ReceiptText className="size-3.5" />
                                     View / print payment receipt
@@ -926,12 +926,12 @@ export function AccountDashboard({
                                         size="sm"
                                         variant="outline"
                                         onClick={() => setReviewingBookingId((current) => current === booking.id ? "" : booking.id)}
-                                        className="h-9 rounded-full border-violet-200 bg-violet-50/60 text-violet-700 hover:bg-violet-100"
+                                        className="h-9 rounded-full border-[#d7dfd1] bg-[#f3f7ee]/80 text-[#315c3c] hover:bg-[#e8efdc]"
                                       >
                                         {reviewingBookingId === booking.id ? "Close review" : "Leave a review"}
                                       </Button>
                                       {reviewingBookingId === booking.id ? (
-                                        <form onSubmit={(event) => void submitReview(event, booking.id)} className="mt-3 grid gap-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
+                                        <form onSubmit={(event) => void submitReview(event, booking.id)} className="mt-3 grid gap-3 rounded-2xl border border-[#dfe6d8] bg-[#f3f7ee]/70 p-4">
                                           <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
                                             Your rating
                                             <select value={reviewRating} onChange={(event) => setReviewRating(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800">
@@ -940,7 +940,7 @@ export function AccountDashboard({
                                           </label>
                                           <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
                                             Share your rental experience
-                                            <textarea value={reviewQuote} onChange={(event) => setReviewQuote(event.target.value)} required minLength={10} maxLength={1000} rows={3} className="resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-violet-200" placeholder="What went well?" />
+                                            <textarea value={reviewQuote} onChange={(event) => setReviewQuote(event.target.value)} required minLength={10} maxLength={1000} rows={3} className="resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-[#cfe0bf]" placeholder="What went well?" />
                                           </label>
                                           <Button type="submit" size="sm" disabled={isSubmitting || reviewQuote.trim().length < 10} className={cn("w-fit rounded-full text-white", publicTone.gradient)}>
                                             {isSubmitting ? "Submitting..." : "Submit review"}
@@ -1038,7 +1038,7 @@ export function AccountDashboard({
                             if (!item) return null;
                             return (
                               <article
-                                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors hover:border-violet-200"
+                                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors hover:border-[#d7dfd1]"
                                 key={favorite.favoriteId}
                               >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1078,7 +1078,7 @@ export function AccountDashboard({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeFavorite(item.id)}
-                                    className="h-8 rounded-full px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                    className="h-8 rounded-full px-3 text-xs text-[#9a3f37] hover:bg-[#fff7f6] hover:text-rose-700"
                                   >
                                     Remove favorite
                                   </Button>

@@ -60,11 +60,12 @@ type Category = { name: string; count: number };
 
 export function EquipmentBrowser() {
   const searchParams = useSearchParams();
+  const categoryParam = searchParams?.get("category") ?? "";
   const [listings, setListings] = useState<EquipmentListing[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [category, setCategory] = useState(() => searchParams?.get("category") ?? "");
+  const [category, setCategory] = useState(categoryParam);
   const [rentalType, setRentalType] = useState("");
   const [availability, setAvailability] = useState("");
   const [minimumPrice, setMinimumPrice] = useState("");
@@ -76,6 +77,12 @@ export function EquipmentBrowser() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    // Keep the selected filter in sync when a category link changes the URL in-place.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCategory(categoryParam);
+  }, [categoryParam]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedQuery(query), 300);
@@ -177,7 +184,7 @@ export function EquipmentBrowser() {
             <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  "grid size-8 place-items-center rounded-xl bg-linear-to-br text-white shadow-md shadow-violet-500/25",
+                  "grid size-8 place-items-center rounded-xl bg-linear-to-br text-white shadow-md shadow-[#315c3c]/20",
                   publicTone.gradient
                 )}
               >
@@ -187,7 +194,7 @@ export function EquipmentBrowser() {
             </div>
             <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               Find your next{" "}
-              <span className="bg-linear-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-[#315c3c] to-[#6f8f4c] bg-clip-text text-transparent">
                 good thing.
               </span>
             </h1>
@@ -234,7 +241,7 @@ export function EquipmentBrowser() {
                 placeholder="Search name, location, or category"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                className="h-11 rounded-xl border-slate-200 bg-slate-50/80 pl-9 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus-visible:border-violet-300 focus-visible:ring-violet-200/60"
+                className="h-11 rounded-xl border-slate-200 bg-slate-50/80 pl-9 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus-visible:border-[#8fb361] focus-visible:ring-[#cfe0bf]/60"
               />
             </div>
 
@@ -284,7 +291,7 @@ export function EquipmentBrowser() {
                     variant="ghost"
                     size="sm"
                     onClick={clearFilters}
-                    className="rounded-full text-xs text-slate-500 hover:text-violet-700"
+                    className="rounded-full text-xs text-slate-500 hover:text-[#315c3c]"
                   >
                     Clear
                   </Button>
@@ -440,7 +447,7 @@ export function EquipmentBrowser() {
               {isLoading ? (
                 <div role="status">
                   <p className="mb-4 flex items-center gap-2 text-sm text-slate-500">
-                    <Loader2 className="size-4 animate-spin text-violet-600" />
+                    <Loader2 className="size-4 animate-spin text-[#4c6d45]" />
                     Loading live equipment...
                   </p>
                   <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -463,7 +470,7 @@ export function EquipmentBrowser() {
                   role="alert"
                   className={cn(appSurfaces.card, "flex flex-col items-center gap-3 px-6 py-14 text-center")}
                 >
-                  <span className="grid size-12 place-items-center rounded-2xl bg-rose-50 text-rose-600">
+                  <span className="grid size-12 place-items-center rounded-2xl bg-[#fff7f6] text-[#9a3f37]">
                     <TriangleAlert className="size-5" />
                   </span>
                   <h2 className="text-lg font-bold text-slate-900">Equipment could not be loaded</h2>
@@ -471,7 +478,7 @@ export function EquipmentBrowser() {
                   <Button
                     type="button"
                     onClick={() => setReloadKey((key) => key + 1)}
-                    className="mt-2 rounded-full bg-slate-900! px-5 text-white! hover:bg-violet-700!"
+                    className="mt-2 rounded-full bg-[#315c3c]! px-5 text-white! hover:bg-[#27492f]!"
                   >
                     <RotateCcw className="size-4" />
                     Try again
@@ -484,7 +491,7 @@ export function EquipmentBrowser() {
                       key={item.id}
                       className={cn(
                         appSurfaces.card,
-                        "group gap-0 overflow-hidden border-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-violet-500/10"
+                        "group gap-0 overflow-hidden border-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#315c3c]/10"
                       )}
                     >
                       <div className="relative h-56 overflow-hidden">
@@ -515,7 +522,7 @@ export function EquipmentBrowser() {
                           <span
                             className={cn(
                               "size-1.5 rounded-full",
-                              item.availableQuantity ? "bg-emerald-500" : "bg-rose-500"
+                              item.availableQuantity ? "bg-emerald-500" : "bg-[#fff7f6]0"
                             )}
                           />
                           {item.availableQuantity
@@ -555,7 +562,7 @@ export function EquipmentBrowser() {
                           </p>
                           <Link
                             href={`/equipment/${item.id}`}
-                            className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-900 hover:text-white focus-visible:ring-3 focus-visible:ring-violet-300/60"
+                            className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-900 hover:text-white focus-visible:ring-3 focus-visible:ring-[#cfe0bf]/60"
                           >
                             View details
                             <ArrowUpRight className="size-3.5" />
@@ -583,7 +590,7 @@ export function EquipmentBrowser() {
                   {!hasActiveFilters && (
                     <Link
                       className={cn(
-                        "mt-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-linear-to-r px-5 text-xs font-semibold text-white shadow-lg shadow-fuchsia-500/20 transition-all hover:-translate-y-px focus-visible:ring-3 focus-visible:ring-violet-300/60",
+                        "mt-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-linear-to-r px-5 text-xs font-semibold text-white shadow-lg shadow-[#315c3c]/15 transition-all hover:-translate-y-px focus-visible:ring-3 focus-visible:ring-[#cfe0bf]/60",
                         publicTone.gradient
                       )}
                       href="/signup"
@@ -596,7 +603,7 @@ export function EquipmentBrowser() {
                     <Button
                       type="button"
                       onClick={clearFilters}
-                      className="mt-2 rounded-full bg-slate-900! px-5 text-white! hover:bg-violet-700!"
+                      className="mt-2 rounded-full bg-[#315c3c]! px-5 text-white! hover:bg-[#27492f]!"
                     >
                       Clear filters
                     </Button>

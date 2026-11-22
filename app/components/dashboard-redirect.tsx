@@ -7,21 +7,44 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { appSurfaces, publicTone } from "../data/app-theme";
+import { apiRequest } from "../lib/api";
+import { clearAuth, getStoredRole, getStoredToken, saveAuth, type AuthUser } from "../lib/auth";
 import { dashboardHref, type DashboardRole } from "../lib/dashboard-routes";
 
 export function DashboardRedirect({ role }: { role?: DashboardRole }) {
   const router = useRouter();
 
   useEffect(() => {
-    const storedRole = window.localStorage.getItem("fieldkit_user_role");
-    const token = window.localStorage.getItem("fieldkit_token");
-    const targetRole = role || storedRole;
+    let active = true;
+    const token = getStoredToken();
+    const fallbackRole = getStoredRole() || role;
 
-    if (!token || !targetRole) {
+    if (!token) {
       router.replace("/login?next=/dashboard");
       return;
     }
-    router.replace(dashboardHref(targetRole));
+
+    apiRequest<{ user: AuthUser }>("/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(({ user }) => {
+        if (!active) return;
+        saveAuth(token, user);
+        router.replace(dashboardHref(user.role));
+      })
+      .catch(() => {
+        if (!active) return;
+        if (fallbackRole) {
+          router.replace(dashboardHref(fallbackRole));
+          return;
+        }
+        clearAuth();
+        router.replace("/login?next=/dashboard");
+      });
+
+    return () => {
+      active = false;
+    };
   }, [role, router]);
 
   return (
@@ -46,7 +69,7 @@ export function DashboardRedirect({ role }: { role?: DashboardRole }) {
           >
             <LoaderCircle className="size-6 animate-spin" aria-hidden="true" />
           </span>
-          <p className={cn(appSurfaces.eyebrow, "text-violet-600")}>DASHBOARD ACCESS</p>
+          <p className={cn(appSurfaces.eyebrow, "text-[#4c6d45]")}>DASHBOARD ACCESS</p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
             Opening your dashboard...
           </h1>

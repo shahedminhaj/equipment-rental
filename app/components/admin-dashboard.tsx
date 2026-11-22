@@ -63,10 +63,14 @@ type AdminAnalytics = {
 };
 
 const tone = roleTones.admin;
-// The shared UI kit reads tone from context; these two props still render inline CSS.
-const statGradient = "linear-gradient(135deg, #7c3aed, #d946ef, #f43f5e)";
-const statSoft = "#ede9fe";
-const heroGlow = "linear-gradient(135deg, #4338ca, #7c3aed, #c026d3)";
+const statGradient = "linear-gradient(135deg, #315c3c, #4c6d45, #7ba356)";
+const statSoft = "#edf3e2";
+const statPalettes = [
+  { gradient: "linear-gradient(135deg, #315c3c, #6f9b5c)", soft: "#edf5e8" },
+  { gradient: "linear-gradient(135deg, #285d8d, #5c9bc5)", soft: "#edf5fb" },
+  { gradient: "linear-gradient(135deg, #70479b, #a66dc3)", soft: "#f4eef9" },
+];
+const heroGlow = "linear-gradient(135deg, #1b3224, #315c3c, #4c6d45)";
 
 const monthFormatter = new Intl.DateTimeFormat("en", { month: "short", timeZone: "UTC" });
 function monthLabel(month: string) {
@@ -275,7 +279,7 @@ export function AdminDashboard() {
         action={
           <Link
             href="#review"
-            className={`inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 ${tone.accentText}`}
+            className={`dashboard-hero-cta inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 ${tone.accentText}`}
           >
             Review pending listings <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
@@ -289,8 +293,8 @@ export function AdminDashboard() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {stats.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
+            {stats.map((stat, index) => (
+              <StatCard key={stat.label} {...stat} {...statPalettes[index % statPalettes.length]} />
             ))}
           </div>
 
@@ -428,7 +432,7 @@ export function AdminDashboard() {
                           size="sm"
                           variant="outline"
                           disabled={busyId === item.id}
-                          className="border-rose-200 text-rose-600 hover:bg-rose-50"
+                          className="border-[#f0d6d3] text-[#9a3f37] hover:bg-[#fff7f6]"
                           onClick={() =>
                             updateRequest(
                               `/admin/equipment/${item.id}/status`,
@@ -523,7 +527,7 @@ export function AdminDashboard() {
                               size="xs"
                               variant="ghost"
                               disabled={isSelf || busyId === account.id}
-                              className="text-slate-500 hover:bg-rose-50 hover:text-rose-600"
+                              className="text-slate-500 hover:bg-[#fff7f6] hover:text-[#9a3f37]"
                               onClick={() =>
                                 updateRequest(
                                   `/admin/users/${account.id}/status`,
@@ -584,7 +588,7 @@ export function AdminDashboard() {
                               <Button size="xs" className={`bg-linear-to-r text-white ${tone.gradient}`} disabled={busyId === item.id} onClick={() => updateRequest(`/admin/equipment/${item.id}/status`, { status: "approved" }, "Listing approved.", item.id)}>Approve</Button>
                             ) : null}
                             {item.status !== "rejected" ? (
-                              <Button size="xs" variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50" disabled={busyId === item.id} onClick={() => updateRequest(`/admin/equipment/${item.id}/status`, { status: "rejected" }, "Listing rejected.", item.id)}>Reject</Button>
+                              <Button size="xs" variant="outline" className="border-[#f0d6d3] text-[#9a3f37] hover:bg-[#fff7f6]" disabled={busyId === item.id} onClick={() => updateRequest(`/admin/equipment/${item.id}/status`, { status: "rejected" }, "Listing rejected.", item.id)}>Reject</Button>
                             ) : null}
                             <Button size="xs" variant="ghost" disabled={busyId === item.id} onClick={() => {
                               const name = window.prompt("Equipment name", item.name);
@@ -593,7 +597,7 @@ export function AdminDashboard() {
                               if (price === null) return;
                               updateRequest(`/equipment/${item.id}`, { name: name.trim(), price: Number(price) }, "Equipment updated.", item.id);
                             }}><Pencil size={14} /></Button>
-                            <Button size="xs" variant="ghost" className="text-rose-600 hover:bg-rose-50" disabled={busyId === item.id} onClick={() => void deleteEquipment(item.id)}><Trash2 size={14} /></Button>
+                            <Button size="xs" variant="ghost" className="text-[#9a3f37] hover:bg-[#fff7f6]" disabled={busyId === item.id} onClick={() => void deleteEquipment(item.id)}><Trash2 size={14} /></Button>
                           </div>
                         </td>
                       </tr>

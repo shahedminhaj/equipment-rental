@@ -39,7 +39,7 @@ function ResultLayout({ children }: { children: ReactNode }) {
         <div aria-hidden="true" className={appSurfaces.pageGlow} />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-32 -bottom-40 size-[26rem] rounded-full bg-fuchsia-200/50 blur-[120px]"
+          className="pointer-events-none absolute -right-32 -bottom-40 size-[26rem] rounded-full bg-[#d9ef94]/20 blur-[120px]"
         />
         <div className="relative w-full">{children}</div>
       </main>
@@ -70,7 +70,7 @@ function ResultCard({
       <CardContent className="px-6 pt-9 pb-10 sm:px-10">
         <span
           className={cn(
-            "mx-auto mb-6 grid size-16 place-items-center rounded-2xl bg-linear-to-br text-white shadow-lg shadow-violet-500/20",
+            "mx-auto mb-6 grid size-16 place-items-center rounded-2xl bg-linear-to-br text-white shadow-lg shadow-[#315c3c]/15",
             publicTone.gradient,
           )}
           aria-hidden="true"
@@ -92,8 +92,8 @@ function ResultCard({
         <Link
           className={buttonVariants({
             className: cn(
-              "h-10 rounded-full px-6 text-white shadow-lg shadow-fuchsia-500/20",
-              "bg-linear-to-r hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+              "h-10 rounded-full px-6 text-white shadow-lg shadow-[#315c3c]/15",
+              "bg-linear-to-r hover:from-[#3a6a45] hover:via-[#5b8249] hover:to-[#8fb361]",
               publicTone.gradient,
             ),
           })}
@@ -111,7 +111,7 @@ function ResultError({ message }: { message: string }) {
   return (
     <Alert
       variant="destructive"
-      className="mx-auto max-w-md rounded-2xl border-rose-100 bg-rose-50/70 px-4 py-3 text-left text-rose-900"
+      className="mx-auto max-w-md rounded-2xl border-[#f0d6d3] bg-[#fff7f6]/70 px-4 py-3 text-left text-rose-900"
     >
       <TriangleAlert className="size-4" aria-hidden="true" />
       <AlertDescription className="text-sm leading-relaxed text-rose-900">
@@ -123,7 +123,9 @@ function ResultError({ message }: { message: string }) {
 
 export function PaymentCancelledFromQuery() {
   const searchParams = useSearchParams();
-  return <PaymentCancelled bookingId={searchParams.get("booking_id") || ""} />;
+  // The hosted API uses booking_id; the legacy embedded API uses bookingId.
+  const bookingId = searchParams.get("booking_id") || searchParams.get("bookingId") || "";
+  return <PaymentCancelled bookingId={bookingId} />;
 }
 
 export function PaymentSuccess({ sessionId }: { sessionId: string }) {

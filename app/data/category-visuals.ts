@@ -32,8 +32,8 @@ const visualRules: { match: string[]; visual: CategoryVisual }[] = [
       image:
         "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=85",
       icon: "camera",
-      gradient: "from-fuchsia-500 to-violet-600",
-      soft: "from-fuchsia-500 to-purple-500",
+      gradient: "from-[#5b8249] to-[#315c3c]",
+      soft: "from-[#7ba356] to-[#4c6d45]",
     },
   },
   {
@@ -73,7 +73,7 @@ const visualRules: { match: string[]; visual: CategoryVisual }[] = [
         "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=900&q=85",
       icon: "party",
       gradient: "from-rose-500 to-pink-500",
-      soft: "from-rose-500 to-fuchsia-500",
+      soft: "from-[#b45247] to-[#7ba356]",
     },
   },
 ];

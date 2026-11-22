@@ -42,7 +42,7 @@ function SectionHeading({
       <p
         className={cn(
           "text-[11px] font-bold tracking-[0.18em] uppercase",
-          light ? "text-violet-300" : "text-violet-600"
+          light ? "text-[#d9ef94]" : "text-[#4c6d45]"
         )}
       >
         {eyebrow}
@@ -77,10 +77,10 @@ function GradientButton({
 }) {
   const styles = {
     primary:
-      "bg-linear-to-r from-violet-600 via-fuchsia-600 to-rose-500 text-white shadow-lg shadow-fuchsia-500/25 hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+      "bg-linear-to-r from-[#315c3c] via-[#4c6d45] to-[#7ba356] text-white shadow-lg shadow-[#315c3c]/20 hover:from-[#3a6a45] hover:via-[#5b8249] hover:to-[#8fb361]",
     light:
       "bg-white/10 text-white ring-1 ring-white/30 backdrop-blur-sm hover:bg-white/20",
-    dark: "bg-slate-900 text-white hover:bg-slate-800",
+    dark: "bg-[#315c3c] text-white hover:bg-[#27492f]",
   }[variant];
 
   return (
@@ -88,7 +88,7 @@ function GradientButton({
       href={href}
       className={cn(
         buttonVariants({ size: "lg" }),
-        "h-11 gap-2 rounded-full px-6 text-sm font-semibold transition-all hover:-translate-y-0.5",
+        "cta-green-link h-11 gap-2 rounded-full px-6 text-sm font-semibold transition-all hover:-translate-y-0.5",
         styles,
         className
       )}
@@ -103,17 +103,17 @@ function HeroSection({ data }: { data: LandingData }) {
   const primaryStat = data.stats.listings;
 
   return (
-    <section className="relative isolate overflow-hidden bg-[#0b1020] text-white">
-      <div className="pointer-events-none absolute -top-40 -left-32 size-[30rem] rounded-full bg-violet-600/30 blur-[120px]" />
-      <div className="pointer-events-none absolute -right-24 top-10 size-[26rem] rounded-full bg-fuchsia-500/25 blur-[110px]" />
-      <div className="pointer-events-none absolute bottom-[-12rem] left-1/3 size-[28rem] rounded-full bg-sky-500/20 blur-[120px]" />
+    <section className="relative isolate overflow-hidden bg-[#17241b] text-white">
+      <div className="pointer-events-none absolute -top-40 -left-32 size-[30rem] rounded-full bg-[#4c6d45]/20 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-24 top-10 size-[26rem] rounded-full bg-[#d9ef94]/15 blur-[110px]" />
+      <div className="pointer-events-none absolute bottom-[-12rem] left-1/3 size-[28rem] rounded-full bg-[#6d9189]/15 blur-[120px]" />
       <div className="landing-grid absolute inset-0 opacity-[0.07]" />
 
       <div className="relative mx-auto grid w-full max-w-7xl items-center gap-14 px-6 py-20 lg:grid-cols-[1.02fr_0.98fr] lg:py-28">
         <Reveal>
           <Badge
             variant="outline"
-            className="h-auto gap-2 rounded-full border-white/20 bg-white/5 px-3 py-1.5 text-[10px] font-bold tracking-[0.16em] text-violet-200 uppercase"
+            className="h-auto gap-2 rounded-full border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold tracking-[0.16em] text-[#dce7cd] uppercase"
           >
             <LandingIcon name="sparkles" className="size-3.5" />
             {hero.eyebrow}
@@ -122,7 +122,7 @@ function HeroSection({ data }: { data: LandingData }) {
           <h1 className="mt-7 text-[clamp(2.9rem,6vw,5rem)] leading-[0.98] font-bold tracking-[-0.055em]">
             {hero.titleLead}
             <br />
-            <span className="gradient-text bg-linear-to-r from-sky-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
+            <span className="gradient-text bg-linear-to-r from-[#d9ef94] via-[#c8dea8] to-[#eef4e2] bg-clip-text text-transparent">
               {hero.titleAccent}
             </span>
           </h1>
@@ -146,7 +146,7 @@ function HeroSection({ data }: { data: LandingData }) {
                 key={chip}
                 className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-slate-300"
               >
-                <LandingIcon name="check" className="size-3 text-emerald-400" />
+                <LandingIcon name="check" className="size-3 text-[#d9ef94]" />
                 {chip}
               </span>
             ))}
@@ -157,10 +157,10 @@ function HeroSection({ data }: { data: LandingData }) {
               {hero.avatars.map((avatar, index) => (
                 <Avatar
                   key={`${avatar}-${index}`}
-                  className="size-9 ring-2 ring-[#0b1020]"
+                  className="size-9 ring-2 ring-[#17241b]"
                   style={{
                     background: [
-                      "linear-gradient(135deg,#a78bfa,#ec4899)",
+                      "linear-gradient(135deg,#315c3c,#7ba356)",
                       "linear-gradient(135deg,#38bdf8,#6366f1)",
                       "linear-gradient(135deg,#fbbf24,#f97316)",
                       "linear-gradient(135deg,#34d399,#14b8a6)",
@@ -177,14 +177,14 @@ function HeroSection({ data }: { data: LandingData }) {
             <div className="text-xs leading-5">
               <p className="font-semibold text-white">{hero.proofTitle}</p>
               <p className="text-slate-400">
-                {hero.proofSubtitle} <span className="text-violet-300">({primaryStat}+ listings)</span>
+                {hero.proofSubtitle} <span className="text-[#d9ef94]">({primaryStat}+ listings)</span>
               </p>
             </div>
           </div>
         </Reveal>
 
         <Reveal className="relative">
-          <div className="absolute -inset-4 rounded-[2.5rem] bg-linear-to-br from-violet-500/30 via-fuchsia-500/20 to-sky-500/30 blur-2xl" />
+          <div className="absolute -inset-4 rounded-[2.5rem] bg-linear-to-br from-[#4c6d45]/25 via-[#d9ef94]/15 to-[#6d9189]/20 blur-2xl" />
           <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-white/5 p-2 shadow-2xl shadow-black/40 backdrop-blur-sm">
             <div className="relative aspect-[4/4.4] overflow-hidden rounded-[1.5rem]">
               <Image
@@ -199,7 +199,7 @@ function HeroSection({ data }: { data: LandingData }) {
               <div className="absolute inset-0 bg-linear-to-t from-slate-950/70 via-transparent to-transparent" />
 
               <div className="absolute top-5 right-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-slate-950/50 px-3 py-2 text-xs font-medium backdrop-blur-md">
-                <span className="size-2 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]" />
+                <span className="size-2 rounded-full bg-[#7ba356] shadow-[0_0_10px_#34d399]" />
                 {hero.location}
               </div>
 
@@ -208,20 +208,20 @@ function HeroSection({ data }: { data: LandingData }) {
                   <p className="text-sm font-bold">{hero.floatingTitle}</p>
                   <p className="mt-0.5 text-[11px] text-slate-500">{hero.floatingSubtitle}</p>
                 </div>
-                <Badge className="h-auto rounded-xl bg-linear-to-br from-violet-600 to-fuchsia-600 px-3 py-2 text-lg font-bold shadow-lg">
+                <Badge className="h-auto rounded-xl bg-linear-to-br from-[#315c3c] to-[#6f8f4c] px-3 py-2 text-lg font-bold shadow-lg">
                   {data.stats.rating}
                 </Badge>
               </div>
 
               <div className="absolute top-1/2 left-5 -translate-y-1/2 rounded-xl border border-white/20 bg-slate-950/50 px-3 py-2 text-[11px] backdrop-blur-md">
-                <span className="font-bold text-violet-300">{hero.captionLabel}</span>
+                <span className="font-bold text-[#d9ef94]">{hero.captionLabel}</span>
                 <span className="ml-2 text-slate-200">{hero.caption}</span>
               </div>
             </div>
           </div>
 
           <div className="float-slow absolute -top-6 -left-5 hidden items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs font-semibold text-white shadow-xl backdrop-blur-xl sm:flex">
-            <span className="grid size-8 place-items-center rounded-xl bg-emerald-400/20 text-emerald-300">
+            <span className="grid size-8 place-items-center rounded-xl bg-[#7ba356]/20 text-emerald-300">
               <LandingIcon name="shield" className="size-4" />
             </span>
             Verified owners
@@ -254,7 +254,7 @@ function StatsStrip({ stats }: { stats: LandingData["stats"] }) {
                     <p className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
                       {stat.prefix}
                       {value}
-                      <span className="text-violet-600">{stat.suffix}</span>
+                      <span className="text-[#4c6d45]">{stat.suffix}</span>
                     </p>
                     <p className="truncate text-[11px] text-slate-500">{stat.label}</p>
                   </div>
@@ -378,7 +378,7 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
           <StaggerGroup className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
               <StaggerItem key={item.id}>
-                <Card className="group h-full gap-0 overflow-hidden rounded-3xl border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-violet-500/10">
+                <Card className="group h-full gap-0 overflow-hidden rounded-3xl border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-[#315c3c]/10">
                   <div className="relative h-56 overflow-hidden">
                     <Image
                       src={item.image}
@@ -389,7 +389,7 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
                       className="object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-slate-950/45 to-transparent" />
-                    <Badge className="absolute top-4 left-4 rounded-full bg-white/90 text-[10px] font-bold text-violet-700 shadow-sm backdrop-blur-sm">
+                    <Badge className="absolute top-4 left-4 rounded-full bg-white/90 text-[10px] font-bold text-[#315c3c] shadow-sm backdrop-blur-sm">
                       {item.category}
                     </Badge>
                     <Badge
@@ -402,7 +402,7 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
                       <span
                         className={cn(
                           "size-1.5 rounded-full",
-                          item.availableQuantity ? "bg-emerald-500" : "bg-rose-500"
+                          item.availableQuantity ? "bg-emerald-500" : "bg-[#fff7f6]0"
                         )}
                       />
                       {item.availableQuantity
@@ -413,7 +413,7 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
 
                   <CardContent className="flex flex-1 flex-col p-5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-bold tracking-wider text-violet-600 uppercase">
+                      <span className="text-[10px] font-bold tracking-wider text-[#4c6d45] uppercase">
                         {item.rentalType} rental
                       </span>
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600">
@@ -447,7 +447,7 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
                         }
                         className={buttonVariants({
                           size: "sm",
-                          className: "rounded-full bg-slate-900 px-4 text-xs text-white hover:bg-violet-700",
+                          className: "cta-green-link rounded-full bg-[#315c3c] px-4 text-xs hover:bg-[#27492f]",
                         })}
                       >
                         View details
@@ -469,10 +469,10 @@ function WhySection() {
   const content = siteContent.why;
 
   return (
-    <section id="why-fieldkit" className="scroll-mt-24 bg-[#0b1020] py-24 text-white">
+    <section id="why-fieldkit" className="scroll-mt-24 bg-[#17241b] py-24 text-white">
       <div className="mx-auto grid w-full max-w-7xl items-center gap-14 px-6 lg:grid-cols-2">
         <Reveal className="relative">
-          <div className="absolute -inset-3 rounded-[2.5rem] bg-linear-to-br from-emerald-400/25 via-sky-500/20 to-violet-600/25 blur-2xl" />
+          <div className="absolute -inset-3 rounded-[2.5rem] bg-linear-to-br from-[#4c6d45]/20 via-[#d9ef94]/15 to-[#6d9189]/20 blur-2xl" />
           <div className="relative overflow-hidden rounded-[2rem] border border-white/10">
             <Image
               src={content.image}
@@ -484,12 +484,12 @@ function WhySection() {
             />
             <div className="absolute inset-0 bg-linear-to-t from-slate-950/85 via-transparent to-slate-950/20" />
             <div className="absolute bottom-6 left-6">
-              <p className="text-[10px] font-bold tracking-[0.2em] text-violet-300">
+              <p className="text-[10px] font-bold tracking-[0.2em] text-[#d9ef94]">
                 {content.photoLabel}
               </p>
               <p className="mt-1 text-xl font-bold">{content.photoTitle}</p>
             </div>
-            <div className="absolute top-6 right-6 grid size-20 rotate-12 place-items-center rounded-2xl bg-linear-to-br from-emerald-400 to-teal-500 text-center text-[10px] font-black leading-tight text-slate-900 shadow-xl">
+            <div className="absolute top-6 right-6 grid size-20 rotate-12 place-items-center rounded-2xl bg-linear-to-br from-[#d9ef94] to-[#b7c978] text-center text-[10px] font-black leading-tight text-[#17241b] shadow-xl">
               {content.stamp.split(" ").map((word) => (
                 <span key={word} className="block">
                   {word}
@@ -500,13 +500,13 @@ function WhySection() {
         </Reveal>
 
         <Reveal>
-          <p className="text-[11px] font-bold tracking-[0.18em] text-violet-300 uppercase">
+          <p className="text-[11px] font-bold tracking-[0.18em] text-[#d9ef94] uppercase">
             {content.eyebrow}
           </p>
           <h2 className="mt-4 text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl">
             {content.titleLead}
             <br />
-            <span className="gradient-text bg-linear-to-r from-emerald-300 via-sky-300 to-violet-300 bg-clip-text text-transparent">
+            <span className="gradient-text bg-linear-to-r from-[#d9ef94] via-[#c8dea8] to-[#eef4e2] bg-clip-text text-transparent">
               {content.titleAccent}
             </span>
           </h2>
@@ -564,7 +564,7 @@ function HowSection() {
         </Reveal>
 
         <StaggerGroup className="relative mt-14 grid gap-5 md:grid-cols-3">
-          <div className="absolute top-12 right-[16%] left-[16%] hidden h-px bg-linear-to-r from-violet-300 via-fuchsia-300 to-orange-300 md:block" />
+          <div className="absolute top-12 right-[16%] left-[16%] hidden h-px bg-linear-to-r from-[#d9ef94] via-[#c8dea8] to-[#dce7cd] md:block" />
           {content.items.map((step) => (
             <StaggerItem key={step.number}>
               <Card className="relative h-full gap-0 overflow-hidden rounded-3xl border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1.5 hover:shadow-xl">
@@ -591,7 +591,7 @@ function HowSection() {
                   {step.title}
                 </h3>
                 <p className="relative mt-2 text-sm leading-6 text-slate-600">{step.description}</p>
-                <div className="relative mt-6 h-1 w-12 rounded-full bg-linear-to-r from-violet-500 to-fuchsia-500" />
+                <div className="relative mt-6 h-1 w-12 rounded-full bg-linear-to-r from-[#3a6a45] to-[#7ba356]" />
               </Card>
             </StaggerItem>
           ))}
@@ -623,7 +623,7 @@ function ReviewsSection({ reviews }: { reviews: LandingReview[] }) {
               <Card className="relative h-full gap-0 overflow-hidden rounded-3xl border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1.5 hover:shadow-xl">
                 <LandingIcon
                   name="quote"
-                  className="absolute top-5 right-5 size-8 text-violet-100"
+                  className="absolute top-5 right-5 size-8 text-[#edf3e2]"
                 />
                 <div className="flex gap-0.5 text-amber-400" aria-label={`${review.rating} out of 5 stars`}>
                   {Array.from({ length: 5 }).map((_, starIndex) => (
@@ -646,7 +646,7 @@ function ReviewsSection({ reviews }: { reviews: LandingReview[] }) {
                     <AvatarFallback
                       className={cn(
                         "bg-linear-to-br text-[11px] font-bold text-white",
-                        ["from-violet-500 to-fuchsia-500", "from-sky-500 to-blue-500", "from-emerald-500 to-lime-500", "from-orange-500 to-rose-500"][index % 4]
+                        ["from-[#315c3c] to-[#6f8f4c]", "from-[#4f7b4e] to-[#6d9189]", "from-[#55612f] to-[#9aa95e]", "from-[#396b5c] to-[#78a58c]"][index % 4]
                       )}
                     >
                       {review.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}
@@ -656,7 +656,7 @@ function ReviewsSection({ reviews }: { reviews: LandingReview[] }) {
                     <p className="truncate text-sm font-bold text-slate-900">{review.name}</p>
                     <p className="truncate text-[11px] text-slate-500">{review.role || "Verified renter"}</p>
                   </div>
-                  <extraIcons.BadgeCheck className="ml-auto size-4 shrink-0 text-violet-600" />
+                  <extraIcons.BadgeCheck className="ml-auto size-4 shrink-0 text-[#4c6d45]" />
                 </div>
               </Card>
             </StaggerItem>
@@ -688,7 +688,7 @@ function FaqSection() {
             description={content.description}
           />
           <div className="mt-8 flex items-center gap-3 text-sm text-slate-500">
-            <span className="grid size-10 place-items-center rounded-xl bg-violet-100 text-violet-600">
+            <span className="grid size-10 place-items-center rounded-xl bg-[#e8efdc] text-[#4c6d45]">
               <LandingIcon name="sparkles" className="size-5" />
             </span>
             Still curious? Browse the catalog and see what&apos;s available near you.
@@ -725,19 +725,19 @@ function CtaSection() {
     <section className="bg-white px-6 pb-24">
       <Reveal>
         <div className="relative isolate mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-slate-950 px-6 py-16 text-center sm:px-12">
-          <div className="pointer-events-none absolute -top-24 left-1/4 size-80 rounded-full bg-violet-600/50 blur-[100px]" />
-          <div className="pointer-events-none absolute -right-16 -bottom-24 size-80 rounded-full bg-fuchsia-500/40 blur-[100px]" />
-          <div className="pointer-events-none absolute -bottom-24 left-1/4 size-72 rounded-full bg-sky-500/30 blur-[100px]" />
+          <div className="pointer-events-none absolute -top-24 left-1/4 size-80 rounded-full bg-[#4c6d45]/35 blur-[100px]" />
+          <div className="pointer-events-none absolute -right-16 -bottom-24 size-80 rounded-full bg-[#d9ef94]/20 blur-[100px]" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/4 size-72 rounded-full bg-[#6d9189]/20 blur-[100px]" />
           <div className="landing-grid absolute inset-0 opacity-[0.08]" />
 
           <div className="relative">
-            <p className="text-[11px] font-bold tracking-[0.2em] text-violet-300 uppercase">
+            <p className="text-[11px] font-bold tracking-[0.2em] text-[#d9ef94] uppercase">
               {content.eyebrow}
             </p>
             <h2 className="mt-5 text-4xl leading-[1.08] font-bold tracking-tight text-white sm:text-5xl">
               {content.titleLead}
               <br />
-              <span className="gradient-text bg-linear-to-r from-sky-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
+              <span className="gradient-text bg-linear-to-r from-[#d9ef94] via-[#c8dea8] to-[#eef4e2] bg-clip-text text-transparent">
                 {content.titleAccent}
               </span>
             </h2>

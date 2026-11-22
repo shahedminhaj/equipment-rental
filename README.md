@@ -55,22 +55,25 @@ secrets in the backend `.env`; never expose them in a `NEXT_PUBLIC_` variable.
 
 ### Backend setup
 
-The Express/MongoDB API is in `server/`. Copy `server/.env.example` to
-`server/.env`, add a unique random `JWT_SECRET` (at least 32 characters), and set
-the MongoDB URI, frontend origin, and administrator credentials. The server creates
-the configured administrator account at startup. The file is ignored by Git.
+The primary Express/MongoDB API lives in the separate
+[equipment-rental-backend](https://github.com/shahedminhaj/equipment-rental-backend)
+repository (an older embedded copy remains in `server/`). Copy its `.env.example`
+to `.env`, add a unique random `JWT_SECRET` (at least 32 characters), and set the
+MongoDB URI, frontend origin (`CLIENT_URL`), and administrator credentials. The
+server creates the configured administrator account at startup. The file is
+ignored by Git.
 
 In a second terminal, install and run the API from its own folder:
 
 ```bash
-cd server
+cd ../equipment-rental-backend
 npm ci
 npm run dev
 ```
 
 The API listens on port 5000 by default. Its role middleware protects owner, customer,
 and admin routes; public signup and Google sign-in always create customer
-accounts. Admins can promote users to owners from the admin dashboard.
+accounts. Admins can promote users to owners or admins from the admin dashboard.
 
 ### Booking and Stripe payment
 
@@ -78,7 +81,7 @@ The booking dialog posts the rental details to `POST /api/bookings` with the
 customer's JWT. The backend checks date and quantity availability, creates the
 reservation and Stripe Checkout session, then returns `checkoutUrl`; the browser redirects to
 `checkout.stripe.com`. `STRIPE_SECRET_KEY`, `STRIPE_CURRENCY`, and
-`STRIPE_WEBHOOK_SECRET` belong only in `server/.env`, so the frontend does not
+`STRIPE_WEBHOOK_SECRET` belong only in the backend `.env`, so the frontend does not
 need a Stripe SDK or publishable key. Configure the Stripe webhook at
 `/api/payments/webhook` for Checkout completion, expiration, and payment failure.
 The webhook records the transaction and updates the booking payment status.
@@ -90,8 +93,10 @@ The API includes customer favorites and reviews, owner inventory and rental
 management, admin user/listing/rental management, and MongoDB-backed admin and
 owner analytics. A daily `node-cron` task completes ended confirmed rentals.
 If SMTP settings are configured, it emails the renter and owner after completion.
-The dashboard notification menu is intentionally static and shows platform
-guidance rather than account-specific events.
+The dashboard bell shows unread MongoDB-backed messages. Customers and owners
+can contact the admin team, and admins can message a selected customer or owner.
+Opening the inbox marks its unread messages as read; the badge appears only when
+unread messages exist.
 
 Google sign-in also requires the page origin to be registered on **that exact
 OAuth client** in Google Cloud Console → APIs & Services → Credentials → OAuth
@@ -163,7 +168,9 @@ approved listings when the equipment collection is empty.
 
 ## Deployment
 
-Live site: add your deployed frontend URL here before submission.
+**Live URL:** `<add your deployed frontend URL before submission>` (e.g. the Vercel
+project domain). Also set this URL as the first entry in the backend `CLIENT_URL`
+so CORS and Stripe return links work in production.
 
 For deployment, set `NEXT_PUBLIC_API_URL` to the public backend `/api` origin and
 configure the same Google client ID, imgbb key, and Stripe/backend settings used
@@ -173,6 +180,6 @@ by the API.
 
 The landing page reads `GET /reviews/featured`, which returns
 `{ "items": [{ "id": "...", "name": "...", "role": "...", "quote": "...", "rating": 5 }] }`.
-Reviews are submitted from completed rentals and only contain genuine customer
-feedback. If no reviews exist, the page shows an empty state instead of sample
-testimonials. The API enforces one review per completed booking.
+The API returns up to eight real customer reviews. Reviews appear after a
+customer submits one for a paid, completed rental; the API enforces one review
+per booking. The section shows an empty state until the first review is submitted.

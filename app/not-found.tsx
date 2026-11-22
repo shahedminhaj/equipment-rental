@@ -57,8 +57,8 @@ export default function NotFound() {
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               className={cn(
-                buttonVariants({ className: "h-10 rounded-full px-6 text-white shadow-lg shadow-fuchsia-500/20" }),
-                "bg-linear-to-r hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+                buttonVariants({ className: "h-10 rounded-full px-6 text-white shadow-lg shadow-[#315c3c]/15" }),
+                "bg-linear-to-r hover:from-[#3a6a45] hover:via-[#5b8249] hover:to-[#8fb361]",
                 publicTone.gradient,
               )}
               href="/"

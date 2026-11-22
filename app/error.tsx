@@ -29,7 +29,7 @@ export default function ErrorPage({
       <div aria-hidden="true" className={appSurfaces.pageGlow} />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-32 -bottom-40 size-[26rem] rounded-full bg-fuchsia-200/50 blur-[120px]"
+        className="pointer-events-none absolute -right-32 -bottom-40 size-[26rem] rounded-full bg-[#d9ef94]/20 blur-[120px]"
       />
       <Card
         className={cn(
@@ -50,7 +50,7 @@ export default function ErrorPage({
           >
             <TriangleAlert className="size-7" aria-hidden="true" />
           </span>
-          <p className={cn(appSurfaces.eyebrow, "text-violet-600")}>Something went wrong</p>
+          <p className={cn(appSurfaces.eyebrow, "text-[#4c6d45]")}>Something went wrong</p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
             We couldn&apos;t load this page
           </h1>
@@ -61,8 +61,8 @@ export default function ErrorPage({
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button
               className={cn(
-                "h-10 rounded-full bg-linear-to-r px-6 text-white shadow-lg shadow-fuchsia-500/20",
-                "hover:from-violet-500 hover:via-fuchsia-500 hover:to-rose-400",
+                "h-10 rounded-full bg-linear-to-r px-6 text-white shadow-lg shadow-[#315c3c]/15",
+                "hover:from-[#3a6a45] hover:via-[#5b8249] hover:to-[#8fb361]",
                 publicTone.gradient,
               )}
               type="button"

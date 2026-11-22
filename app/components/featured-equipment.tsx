@@ -37,7 +37,7 @@ export function FeaturedEquipment() {
     return (
       <div className="featured-status">
         <p>Featured equipment will appear here once listings are approved.</p>
-        <Link className="button button-dark" href="/equipment">Browse all equipment <span aria-hidden="true">↗</span></Link>
+        <Link className="button button-dark cta-green-link" href="/equipment">Browse all equipment <span aria-hidden="true">↗</span></Link>
       </div>
     );
   }
@@ -73,7 +73,7 @@ export function FeaturedEquipment() {
                 <p className="equipment-location"><span aria-hidden="true">⌖</span> {item.location}</p>
                 <div className="equipment-bottom">
                   <p><strong>{formatCurrency(item.price)}</strong> <span>/ {rentalPeriod(item.rentalType)}</span></p>
-                  <Link className="details-coming-soon" href={detailHref}>
+                  <Link className="details-coming-soon cta-green-link" href={detailHref}>
                     View details <span aria-hidden="true">↗</span>
                   </Link>
                 </div>

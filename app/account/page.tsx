@@ -11,7 +11,7 @@ export default function AccountPage() {
   return (
     <>
       <SiteHeader />
-      <AccountDashboard />
+      <AccountDashboard key="overview" />
       <SiteFooter />
     </>
   );
