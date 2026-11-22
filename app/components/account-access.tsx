@@ -622,7 +622,7 @@ export function AccountAccess({
                     className={buttonVariants({
                       variant: "outline",
                       className:
-                        "h-11 w-full rounded-full border-slate-200 bg-white text-slate-700 hover:bg-[#edf3e2] hover:text-[#315c3c]",
+                        "h-11 w-full rounded-full border-[#c7d8bd] bg-[#dfead5] text-[#244b31] hover:border-[#a9c59a] hover:bg-[#cedfbe] hover:text-[#173a24]",
                     })}
                   >
                     Go to admin sign in

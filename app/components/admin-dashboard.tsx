@@ -123,16 +123,20 @@ export function AdminDashboard() {
 
       if (!active) return;
       const failures: string[] = [];
+      const failureDetail = (result: PromiseSettledResult<unknown>) =>
+        result.status === "rejected" && result.reason instanceof Error
+          ? `: ${result.reason.message}`
+          : "";
       if (analyticsResult.status === "fulfilled") setAnalytics(analyticsResult.value);
-      else failures.push("marketplace analytics");
+      else failures.push(`marketplace analytics${failureDetail(analyticsResult)}`);
       if (pendingResult.status === "fulfilled") setPending(pendingResult.value.items);
-      else failures.push("review queue");
+      else failures.push(`review queue${failureDetail(pendingResult)}`);
       if (allEquipmentResult.status === "fulfilled") setAllEquipment(allEquipmentResult.value.items);
-      else failures.push("equipment list");
+      else failures.push(`equipment list${failureDetail(allEquipmentResult)}`);
       if (usersResult.status === "fulfilled") setUsers(usersResult.value.items);
-      else failures.push("user directory");
+      else failures.push(`user directory${failureDetail(usersResult)}`);
       if (bookingsResult.status === "fulfilled") setBookings(bookingsResult.value.items);
-      else failures.push("rentals");
+      else failures.push(`rentals${failureDetail(bookingsResult)}`);
 
       if (failures.length > 0) {
         setDataError(
