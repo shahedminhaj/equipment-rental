@@ -617,8 +617,8 @@ function ReviewsSection({ reviews }: { reviews: LandingReview[] }) {
         </Reveal>
 
         {reviews.length ? (
-          <StaggerGroup className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {reviews.slice(0, 8).map((review, index) => (
+          <StaggerGroup className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {[...reviews].sort((a, b) => b.rating - a.rating).slice(0, 3).map((review, index) => (
             <StaggerItem key={review.id}>
               <Card className="relative h-full gap-0 overflow-hidden rounded-3xl border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1.5 hover:shadow-xl">
                 <LandingIcon

@@ -23,6 +23,7 @@ import {
   Mail,
   Menu,
   MessageSquareText,
+  Star,
   Package,
   Search,
   Send,
@@ -103,6 +104,7 @@ const themes: Record<DashboardRole, Theme> = {
     nav: [
       { label: "Overview", href: "/customer/dashboard", icon: LayoutDashboard },
       { label: "My rentals", href: "/account/rentals", icon: CalendarDays },
+      { label: "Reviews", href: "/account/reviews", icon: Star },
       { label: "Favorites", href: "/account/favorites", icon: Heart },
       { label: "Find equipment", href: "/equipment", icon: Store },
       { label: "Profile", href: "/account/profile", icon: Settings },

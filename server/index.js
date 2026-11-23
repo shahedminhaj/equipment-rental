@@ -721,7 +721,7 @@ app.get("/api/analytics/owner", ...verifyOwner, asyncRoute(async (req, res) => {
 }));
 
 app.get("/api/reviews/featured", asyncRoute(async (_req, res) => {
-  const items = await reviews.aggregate([{ $sort: { createdAt: -1 } }, { $limit: 8 }, { $lookup: { from: "users", localField: "customerId", foreignField: "_id", as: "customer" } }, { $unwind: "$customer" }, { $project: { _id: 0, id: { $toString: "$_id" }, name: "$customer.name", role: { $literal: "Verified renter" }, quote: 1, rating: 1 } }]).toArray();
+  const items = await reviews.aggregate([{ $sort: { rating: -1, createdAt: -1 } }, { $limit: 3 }, { $lookup: { from: "users", localField: "customerId", foreignField: "_id", as: "customer" } }, { $unwind: "$customer" }, { $project: { _id: 0, id: { $toString: "$_id" }, name: "$customer.name", role: { $literal: "Verified renter" }, quote: 1, rating: 1 } }]).toArray();
   res.json({ items });
 }));
 app.get("/api/reviews/mine", ...verifyRenter, asyncRoute(async (req, res) => {
