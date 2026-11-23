@@ -1,185 +1,92 @@
 # Fieldkit — Equipment Rental Platform
 
-Fieldkit is a responsive Next.js App Router frontend for a local equipment
-rental marketplace. It connects to the Fieldkit Express/MongoDB API for live
-catalog data, accounts, favorites, bookings, Stripe Checkout, and role-based
-dashboards.
+A responsive equipment rental marketplace built with **Next.js, React, and TypeScript**. Users can browse equipment, make bookings, and manage rentals through customer, owner, and admin dashboards.
 
-## Features
+### Features
+- Responsive homepage and equipment marketplace
+- Equipment search, filters, sorting, and pagination
+- User authentication with Email and Google
+- Equipment details and favorites
+- Booking and Stripe Checkout integration
+- Customer dashboard and rental history
+- Owner dashboard and listing management
+- Admin dashboard and user management
+- Reviews and notifications
+- Analytics for owners and admins
 
-- **Marketplace:** responsive home page with live featured approved equipment,
-  live categories, completed-rental customer reviews, Framer Motion animations,
-  and a shared shadcn-style design system. Catalog, category, review, rating,
-  and savings figures are never replaced with demo records when the API is down.
-- **Catalog:** `/equipment` with server-side search, category and rental-type
-  filters, price/availability filters, sorting, and pagination through
-  `GET /api/equipment`.
-- **Listing details:** `/equipment/:id` with live owner data, database-backed
-  favorites, and a booking modal that creates a Stripe Checkout session.
-- **Customer account:** `/account` plus `/account/rentals`,
-  `/account/favorites`, `/account/profile`, and `/customer/dashboard` for
-  bookings, saved equipment, and profile edits.
-- **Owner dashboard:** `/owner/dashboard` (also `/dashboard/owner`) for listing
-  creation/editing/deletion, paid booking decisions, and live earnings analytics
-  from `GET /api/analytics/owner`.
-- **Admin dashboard:** `/admin/dashboard` (also `/dashboard/admin`) for listing
-  approval, user role/status management, platform metrics, and 12-month
-  booking/revenue charts.
-- **Feedback and states:** toast notifications across auth, booking, and
-  management actions, plus branded loading, error, and not-found pages.
-- **Auth:** localStorage JWT sessions with backend-verified roles, role-aware
-  navigation, Google Identity Services sign-in, and protected API requests.
+### Tech Stack
+- Next.js 16 & React 19
+- TypeScript
+- Tailwind CSS 4
+- shadcn/ui
+- Framer Motion
+- Lucide React
+- Express.js & MongoDB (Backend)
+- Stripe & Google OAuth
 
-## Getting started
+### Getting Started
 
-Requirements: Node.js 20+, MongoDB, and a Stripe account for live payments.
+**Requirements:** Node.js 20+ and a running Fieldkit backend.
+
+Install dependencies:
 
 ```bash
 npm ci
-npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The API base URL defaults
-to `http://localhost:5000/api`. To use another port, add `.env.local` in the
-frontend root:
+Create a `.env.local` file in the project root:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-oauth-client-id
-NEXT_PUBLIC_IMGBB_API_KEY=your-imgbb-api-key
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
+NEXT_PUBLIC_IMGBB_API_KEY=your_imgbb_api_key
 ```
 
-`NEXT_PUBLIC_GOOGLE_CLIENT_ID` is optional and only enables Google sign-in. Use
-the same client ID in the backend `.env`. Keep database, JWT, admin, and Stripe
-secrets in the backend `.env`; never expose them in a `NEXT_PUBLIC_` variable.
-
-### Backend setup
-
-The primary Express/MongoDB API lives in the separate
-[equipment-rental-backend](https://github.com/shahedminhaj/equipment-rental-backend)
-repository (an older embedded copy remains in `server/`). Copy its `.env.example`
-to `.env`, add a unique random `JWT_SECRET` (at least 32 characters), and set the
-MongoDB URI, frontend origin (`CLIENT_URL`), and administrator credentials. The
-server creates the configured administrator account at startup. The file is
-ignored by Git.
-
-In a second terminal, install and run the API from its own folder:
+Start the development server:
 
 ```bash
-cd ../equipment-rental-backend
-npm ci
 npm run dev
 ```
 
-The API listens on port 5000 by default. Its role middleware protects owner, customer,
-and admin routes; public signup and Google sign-in always create customer
-accounts. Admins can promote users to owners or admins from the admin dashboard.
+Open `http://localhost:3000` in your browser.
 
-### Booking and Stripe payment
+### Backend Setup
 
-The booking dialog posts the rental details to `POST /api/bookings` with the
-customer's JWT. The backend checks date and quantity availability, creates the
-reservation and Stripe Checkout session, then returns `checkoutUrl`; the browser redirects to
-`checkout.stripe.com`. `STRIPE_SECRET_KEY`, `STRIPE_CURRENCY`, and
-`STRIPE_WEBHOOK_SECRET` belong only in the backend `.env`, so the frontend does not
-need a Stripe SDK or publishable key. Configure the Stripe webhook at
-`/api/payments/webhook` for Checkout completion, expiration, and payment failure.
-The webhook records the transaction and updates the booking payment status.
-Stripe returns the customer to
-`/payment/success` or `/payment/cancel`, which verify or release the temporary
-booking through the API.
+The backend is maintained in a separate repository.
 
-The API includes customer favorites and reviews, owner inventory and rental
-management, admin user/listing/rental management, and MongoDB-backed admin and
-owner analytics. A daily `node-cron` task completes ended confirmed rentals.
-If SMTP settings are configured, it emails the renter and owner after completion.
-The dashboard bell shows unread MongoDB-backed messages. Customers and owners
-can contact the admin team, and admins can message a selected customer or owner.
-Opening the inbox marks its unread messages as read; the badge appears only when
-unread messages exist.
+**Repository:** [Fieldkit Equipment Rental Backend](https://github.com/shahedminhaj/equipment-rental-backend)
 
-Google sign-in also requires the page origin to be registered on **that exact
-OAuth client** in Google Cloud Console → APIs & Services → Credentials → OAuth
-2.0 Client IDs → **Authorized JavaScript origins**:
+Follow its README to configure MongoDB, JWT authentication, Google OAuth, and Stripe.
 
-```
-http://localhost:3000
-http://localhost:3001
-```
-
-Add both if you switch between `next start` and `next dev`. `localhost` and
-`127.0.0.1` are different origins, and a missing entry produces
-`Error 400: origin_mismatch`. Authorized redirect URIs are not needed for the
-Google Identity Services button.
-
-### Admin login
-
-The backend creates or promotes the account configured by `ADMIN_EMAIL` and
-`ADMIN_PASSWORD` at startup and syncs its password hash. Sign in with those
-exact credentials at `/login` or `/dashboard`; no one-time setup click is
-needed. If the password contains `#`, quote it in the backend `.env`, for
-example `ADMIN_PASSWORD="your#password"`, then restart the API. Public sign-up
-and Google sign-in create customer accounts only.
-
-Administrators can promote a customer to an owner from the user table in
-`/admin/dashboard`. Owners can then publish listings, which stay hidden from
-renters until approved by an admin. The backend seeds a demo owner and twelve
-approved listings when the equipment collection is empty.
-
-## Routes
+### Main Routes
 
 | Route | Purpose |
-| --- | --- |
-| `/` | Home, live featured equipment, categories, and community |
-| `/equipment` | Searchable and filterable catalog |
-| `/equipment/:id` | Listing details, favorites, and booking |
-| `/login`, `/signup` | Sign in and create account (User/Admin options) |
+|---|---|
+| `/` | Homepage |
+| `/equipment` | Equipment marketplace |
+| `/equipment/:id` | Equipment details |
+| `/login` | User login |
+| `/signup` | User registration |
 | `/account` | Customer dashboard |
-| `/account/rentals` | Rental history |
-| `/account/favorites` | Saved equipment |
-| `/account/profile` | Profile editing |
-| `/customer/dashboard` | Customer dashboard alias |
-| `/dashboard` | Role-aware management entry point |
-| `/owner/dashboard`, `/dashboard/owner` | Owner dashboard |
-| `/admin/dashboard`, `/dashboard/admin` | Admin dashboard |
-| `/payment/success`, `/payment/cancel` | Stripe return pages |
+| `/owner/dashboard` | Owner dashboard |
+| `/admin/dashboard` | Admin dashboard |
+| `/payment/success` | Successful payment |
+| `/payment/cancel` | Cancelled payment |
 
-## Scripts
+### Available Scripts
 
-- `npm run dev` — start the development server
-- `npm run dev:server` — start the Express API in watch mode
-- `npm run start:server` — start the Express API
-- `npm run build` — create a production build
-- `npm start` — serve the production build
-- `npm run lint` — run ESLint
-- `npm run typecheck` — run TypeScript without dev-only generated route types
+```bash
+npm run dev       # Development server
+npm run build     # Production build
+npm start         # Production server
+npm run lint      # Run ESLint
+npm run typecheck # TypeScript checking
+```
 
-## Stack and packages
+### Deployment
 
-- Next.js 16 App Router, React 19, TypeScript
-- Tailwind CSS 4, `tw-animate-css`, and shadcn/ui Base UI primitives
-- Framer Motion for section animations
-- Lucide React icons and `class-variance-authority` for variant styling
-- ESLint for linting
-- Express, MongoDB Node driver, Stripe, bcryptjs, jsonwebtoken, and Google Auth
-  Library for the API and authentication
-- Helmet, CORS, and express-rate-limit for API protections
-- node-cron and Nodemailer for rental completion and optional email notices
+Deploy the frontend to a Next.js-compatible hosting platform. Configure the required environment variables and set `NEXT_PUBLIC_API_URL` to the deployed backend API URL.
 
-## Deployment
+### Live Demo
 
-**Live URL:** `<add your deployed frontend URL before submission>` (e.g. the Vercel
-project domain). Also set this URL as the first entry in the backend `CLIENT_URL`
-so CORS and Stripe return links work in production.
-
-For deployment, set `NEXT_PUBLIC_API_URL` to the public backend `/api` origin and
-configure the same Google client ID, imgbb key, and Stripe/backend settings used
-by the API.
-
-### Landing page data contract
-
-The landing page reads `GET /reviews/featured`, which returns
-`{ "items": [{ "id": "...", "name": "...", "role": "...", "quote": "...", "rating": 5 }] }`.
-The API returns up to eight real customer reviews. Reviews appear after a
-customer submits one for a paid, completed rental; the API enforces one review
-per booking. The section shows an empty state until the first review is submitted.
+**Live URL:** https://equipment-rental-self.vercel.app/
