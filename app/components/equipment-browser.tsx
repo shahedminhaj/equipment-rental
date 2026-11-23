@@ -562,7 +562,7 @@ export function EquipmentBrowser() {
                           </p>
                           <Link
                             href={`/equipment/${item.id}`}
-                            className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-900 hover:text-white focus-visible:ring-3 focus-visible:ring-[#cfe0bf]/60"
+                            className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-[#e8efdc] hover:text-[#27492f] focus-visible:ring-3 focus-visible:ring-[#cfe0bf]/60"
                           >
                             View details
                             <ArrowUpRight className="size-3.5" />

@@ -447,7 +447,7 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
                         }
                         className={buttonVariants({
                           size: "sm",
-                          className: "cta-green-link rounded-full bg-[#315c3c] px-4 text-xs hover:bg-[#27492f]",
+                          className: "cta-green-link rounded-full bg-[#315c3c] px-4 text-xs hover:!bg-[#4c6d45]",
                         })}
                       >
                         View details
