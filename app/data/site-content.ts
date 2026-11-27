@@ -124,7 +124,7 @@ export const siteContent = {
   featured: {
     eyebrow: "GOOD FINDS, CLOSE BY",
     title: "A few things worth borrowing.",
-    description: "Fresh, approved finds from verified equipment owners near you.",
+    description: "Six approved equipment finds from verified owners, ready for your next project.",
     ctaLabel: "Browse all equipment",
     emptyTitle: "Fresh finds are on the way.",
     emptyDescription: "Approved listings will show up here as soon as they are live.",

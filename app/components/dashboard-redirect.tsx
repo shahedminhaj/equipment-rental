@@ -2,27 +2,26 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { LoaderCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-import { appSurfaces, publicTone } from "../data/app-theme";
 import { apiRequest } from "../lib/api";
 import { clearAuth, getStoredRole, getStoredToken, saveAuth, type AuthUser } from "../lib/auth";
 import { dashboardHref, type DashboardRole } from "../lib/dashboard-routes";
+import { DashboardPreview } from "./dashboard-preview";
 
+/**
+ * Signed-in visitors are sent to the dashboard for their role. Without a
+ * session, the same responsive shell stays visible as an interactive layout
+ * preview so the Customer, Owner, and Admin workspaces can be explored.
+ */
 export function DashboardRedirect({ role }: { role?: DashboardRole }) {
   const router = useRouter();
+  const previewRole: DashboardRole = role || "customer";
 
   useEffect(() => {
-    let active = true;
     const token = getStoredToken();
-    const fallbackRole = getStoredRole() || role;
+    if (!token) return;
 
-    if (!token) {
-      router.replace("/login?next=/dashboard");
-      return;
-    }
+    let active = true;
+    const fallbackRole = getStoredRole() || role;
 
     apiRequest<{ user: AuthUser }>("/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
@@ -47,41 +46,5 @@ export function DashboardRedirect({ role }: { role?: DashboardRole }) {
     };
   }, [role, router]);
 
-  return (
-    <main className={cn(appSurfaces.page, "relative isolate flex items-center justify-center overflow-hidden px-6 py-20")}>
-      <div aria-hidden="true" className={appSurfaces.pageGlow} />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-32 -bottom-40 size-[26rem] rounded-full bg-sky-200/50 blur-[120px]"
-      />
-      <Card
-        className={cn(
-          appSurfaces.card,
-          "relative w-full max-w-sm gap-0 p-8 text-center sm:p-10",
-        )}
-      >
-        <CardContent className="flex flex-col items-center px-0">
-          <span
-            className={cn(
-              "mb-6 grid size-14 place-items-center rounded-2xl bg-linear-to-br text-white shadow-lg",
-              publicTone.gradient,
-            )}
-          >
-            <LoaderCircle className="size-6 animate-spin" aria-hidden="true" />
-          </span>
-          <p className={cn(appSurfaces.eyebrow, "text-[#4c6d45]")}>DASHBOARD ACCESS</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-            Opening your dashboard...
-          </h1>
-          <p className={cn(appSurfaces.body, "mt-3")}>
-            Just a moment while we get the right workspace ready for you.
-          </p>
-          <div className="mt-7 w-full space-y-3" role="status" aria-label="Loading dashboard">
-            <Skeleton className="h-3 w-3/4 rounded-full" />
-            <Skeleton className="h-3 w-1/2 rounded-full" />
-          </div>
-        </CardContent>
-      </Card>
-    </main>
-  );
+  return <DashboardPreview initialRole={previewRole} />;
 }

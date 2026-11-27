@@ -3,7 +3,7 @@ import { DashboardRedirect } from "../components/dashboard-redirect";
 
 export const metadata: Metadata = {
   title: "Dashboard | Fieldkit",
-  description: "Redirecting to the dashboard for your account role.",
+  description: "Explore the responsive Fieldkit dashboard layout for customers, owners, and admins.",
 };
 
 export default function DashboardPage() {

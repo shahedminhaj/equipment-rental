@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { formatCurrency, rentalPeriod, type EquipmentListing } from "../lib/api";
 import { getCategoryVisual } from "../data/category-visuals";
+import { DEMO_LISTING_PREFIX } from "../data/landing-fallback";
 import type { LandingCategory, LandingData, LandingReview } from "../data/landing-data";
 import { siteContent, type StatKey } from "../data/site-content";
 import { Reveal, StaggerGroup, StaggerItem } from "./animations";
@@ -96,6 +96,14 @@ function GradientButton({
       {children}
     </Link>
   );
+}
+
+function featuredHref(item: EquipmentListing) {
+  // Curated demo cards do not have a database record, so send those visitors
+  // to the filtered catalog instead of a missing detail page.
+  return item.id.startsWith(DEMO_LISTING_PREFIX)
+    ? `/equipment?category=${encodeURIComponent(item.category)}`
+    : `/equipment/${item.id}`;
 }
 
 function HeroSection({ data }: { data: LandingData }) {
@@ -191,7 +199,7 @@ function HeroSection({ data }: { data: LandingData }) {
                 src={hero.image}
                 alt={hero.imageAlt}
                 fill
-                priority
+                preload
                 unoptimized
                 sizes="(max-width: 1024px) 100vw, 48vw"
                 className="object-cover"
@@ -341,11 +349,6 @@ function CategoriesSection({ categories }: { categories: LandingCategory[] }) {
 
 function FeaturedSection({ items }: { items: EquipmentListing[] }) {
   const content = siteContent.featured;
-  const [isSignedIn, setIsSignedIn] = useState(false);
-
-  useEffect(() => {
-    setIsSignedIn(Boolean(window.localStorage.getItem("fieldkit_token")));
-  }, []);
 
   return (
     <section
@@ -355,11 +358,17 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
       <div className="mx-auto w-full max-w-7xl px-6">
         <Reveal>
           <div className="flex flex-wrap items-end justify-between gap-6">
-            <SectionHeading
-              eyebrow={content.eyebrow}
-              title={content.title}
-              description={content.description}
-            />
+            <div>
+              <SectionHeading
+                eyebrow={content.eyebrow}
+                title={content.title}
+                description={content.description}
+              />
+              <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#e8efdc] px-3 py-1.5 text-[11px] font-bold text-[#315c3c]">
+                <LandingIcon name="check" className="size-3.5" />
+                {items.length} approved listings ready to rent
+              </p>
+            </div>
             <GradientButton href="/equipment" variant="dark" className="shrink-0">
               {content.ctaLabel}
               <LandingIcon name="arrow-up-right" className="size-4" />
@@ -402,7 +411,7 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
                       <span
                         className={cn(
                           "size-1.5 rounded-full",
-                          item.availableQuantity ? "bg-emerald-500" : "bg-[#fff7f6]0"
+                          item.availableQuantity ? "bg-emerald-500" : "bg-rose-500"
                         )}
                       />
                       {item.availableQuantity
@@ -440,11 +449,7 @@ function FeaturedSection({ items }: { items: EquipmentListing[] }) {
                         </p>
                       </div>
                       <Link
-                        href={
-                          isSignedIn
-                            ? `/equipment/${item.id}`
-                            : `/login?next=${encodeURIComponent(`/equipment/${item.id}`)}`
-                        }
+                        href={featuredHref(item)}
                         className={buttonVariants({
                           size: "sm",
                           className: "cta-green-link rounded-full bg-[#315c3c] px-4 text-xs hover:!bg-[#4c6d45]",
@@ -617,51 +622,58 @@ function ReviewsSection({ reviews }: { reviews: LandingReview[] }) {
         </Reveal>
 
         {reviews.length ? (
-          <StaggerGroup className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {[...reviews].sort((a, b) => b.rating - a.rating).slice(0, 3).map((review, index) => (
-            <StaggerItem key={review.id}>
-              <Card className="relative h-full gap-0 overflow-hidden rounded-3xl border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1.5 hover:shadow-xl">
-                <LandingIcon
-                  name="quote"
-                  className="absolute top-5 right-5 size-8 text-[#edf3e2]"
-                />
-                <div className="flex gap-0.5 text-amber-400" aria-label={`${review.rating} out of 5 stars`}>
-                  {Array.from({ length: 5 }).map((_, starIndex) => (
-                    <LandingIcon
-                      key={starIndex}
-                      name="star"
-                      className={cn("size-3.5", starIndex < Math.round(review.rating) && "fill-current")}
-                    />
-                  ))}
-                  <span className="ml-1.5 text-[11px] font-bold text-slate-500">
-                    {review.rating}
-                  </span>
-                </div>
-                <blockquote className="mt-4 flex-1 text-sm leading-7 text-slate-700">
-                  “{review.quote}”
-                </blockquote>
-                <Separator className="my-5" />
-                <div className="flex items-center gap-3">
-                  <Avatar className="size-10">
-                    <AvatarFallback
-                      className={cn(
-                        "bg-linear-to-br text-[11px] font-bold text-white",
-                        ["from-[#315c3c] to-[#6f8f4c]", "from-[#4f7b4e] to-[#6d9189]", "from-[#55612f] to-[#9aa95e]", "from-[#396b5c] to-[#78a58c]"][index % 4]
-                      )}
-                    >
-                      {review.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-slate-900">{review.name}</p>
-                    <p className="truncate text-[11px] text-slate-500">{review.role || "Verified renter"}</p>
-                  </div>
-                  <extraIcons.BadgeCheck className="ml-auto size-4 shrink-0 text-[#4c6d45]" />
-                </div>
-              </Card>
-            </StaggerItem>
-          ))}
-          </StaggerGroup>
+          <>
+            <p className="mt-5 text-center text-xs font-semibold text-slate-500">
+              {reviews.length} verified customer reviews
+            </p>
+            <StaggerGroup className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {[...reviews]
+                .sort((a, b) => b.rating - a.rating)
+                .map((review, index) => (
+                  <StaggerItem key={review.id}>
+                    <Card className="relative h-full gap-0 overflow-hidden rounded-3xl border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1.5 hover:shadow-xl">
+                      <LandingIcon
+                        name="quote"
+                        className="absolute top-5 right-5 size-8 text-[#edf3e2]"
+                      />
+                      <div className="flex gap-0.5 text-amber-400" aria-label={`${review.rating} out of 5 stars`}>
+                        {Array.from({ length: 5 }).map((_, starIndex) => (
+                          <LandingIcon
+                            key={starIndex}
+                            name="star"
+                            className={cn("size-3.5", starIndex < Math.round(review.rating) && "fill-current")}
+                          />
+                        ))}
+                        <span className="ml-1.5 text-[11px] font-bold text-slate-500">
+                          {review.rating}
+                        </span>
+                      </div>
+                      <blockquote className="mt-4 flex-1 text-sm leading-7 text-slate-700">
+                        “{review.quote}”
+                      </blockquote>
+                      <Separator className="my-5" />
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-10">
+                          <AvatarFallback
+                            className={cn(
+                              "bg-linear-to-br text-[11px] font-bold text-white",
+                              ["from-[#315c3c] to-[#6f8f4c]", "from-[#4f7b4e] to-[#6d9189]", "from-[#55612f] to-[#9aa95e]", "from-[#396b5c] to-[#78a58c]"][index % 4]
+                            )}
+                          >
+                            {review.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-slate-900">{review.name}</p>
+                          <p className="truncate text-[11px] text-slate-500">{review.role || "Verified renter"}</p>
+                        </div>
+                        <extraIcons.BadgeCheck className="ml-auto size-4 shrink-0 text-[#4c6d45]" />
+                      </div>
+                    </Card>
+                  </StaggerItem>
+                ))}
+            </StaggerGroup>
+          </>
         ) : (
           <Card className="mt-12 border-dashed bg-white/70 py-10 text-center">
             <CardHeader>
